@@ -3,18 +3,17 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.core.logging import setup_logging
 from src.core.config import settings
 from src.core.exceptions import AppException, app_exception_handler
 from src.api.v1.endpoints import router as api_v1_router
+import uuid
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+# Initialize structured logging
+setup_logging(level=logging.DEBUG if settings.DEBUG else logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI with project metadata for OpenAPI documentation
+# ... rest of the setup
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
@@ -26,28 +25,26 @@ app = FastAPI(
 # Register Global Exception Handler
 app.add_exception_handler(AppException, app_exception_handler)
 
-# CORS Middleware Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Request Logging Middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """
     Middleware to log every incoming request and its processing time.
     """
+    request_id = str(uuid.uuid4())
     start_time = time.time()
     response = await call_next(request)
     process_time = (time.time() - start_time) * 1000
     
     logger.info(
-        f"Method: {request.method} Path: {request.url.path} "
-        f"Status: {response.status_code} Latency: {process_time:.2f}ms"
+        f"Handled request",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "status": response.status_code,
+            "latency_ms": round(process_time, 2),
+            "request_id": request_id
+        }
     )
     return response
 

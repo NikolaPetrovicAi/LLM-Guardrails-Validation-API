@@ -4,6 +4,7 @@ from openai import AsyncOpenAI
 
 from src.core.config import settings
 from src.services.llm_service import LLMValidatorService
+from src.services.guardrails import PIIMaskingService
 
 @lru_cache()
 def get_instructor_client() -> instructor.Instructor:
@@ -13,10 +14,18 @@ def get_instructor_client() -> instructor.Instructor:
     openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
     return instructor.from_openai(openai_client)
 
+@lru_cache()
+def get_pii_masking_service() -> PIIMaskingService:
+    """
+    Returns a singleton instance of the PIIMaskingService.
+    """
+    return PIIMaskingService()
+
 async def get_llm_service() -> LLMValidatorService:
     """
     Dependency provider for LLMValidatorService.
     Uses the instructor client singleton.
     """
     client = get_instructor_client()
-    return LLMValidatorService(client=client)
+    pii_service = get_pii_masking_service()
+    return LLMValidatorService(client=client, pii_service=pii_service)

@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: SecretStr = Field(..., validation_alias="OPENAI_API_KEY")
     OPENAI_MODEL: str = "gpt-4-turbo"
 
+    # Optimization Settings
+    CACHE_PATH: str = ".cache"
+
     model_config = SettingsConfigDict(
         # Load environment variables from .env if present
         env_file=".env",

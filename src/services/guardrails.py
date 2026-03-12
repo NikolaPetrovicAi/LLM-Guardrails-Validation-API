@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Pattern
+from re import Pattern
+
 
 class PIIMaskingService:
     """
@@ -11,10 +12,13 @@ class PIIMaskingService:
         # Define regex patterns for common PII types
         # Reordered to check IBAN before PHONE to avoid partial matches
         # Added word boundaries \b where appropriate
-        self.patterns: Dict[str, Pattern] = {
-            "EMAIL": re.compile(r"\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\b"),
-            "IBAN": re.compile(r"\b[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}\b"),
-            "PHONE": re.compile(r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4,6}"),
+        email_pattern = r"\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\b"
+        iban_pattern = r"\b[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}\b"
+        phone_pattern = r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4,6}"
+        self.patterns: dict[str, Pattern] = {
+            "EMAIL": re.compile(email_pattern),
+            "IBAN": re.compile(iban_pattern),
+            "PHONE": re.compile(phone_pattern),
         }
 
     def mask_text(self, text: str) -> str:

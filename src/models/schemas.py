@@ -8,31 +8,31 @@ class ExtractionRequest(BaseModel):
 
     text: str = Field(
         ...,
-        description="The raw text input that the LLM will analyze and extract structured data from.",
+        description="The raw text to be analyzed by the LLM.",
         min_length=1,
     )
 
 
 class StructuredResponse(BaseModel):
     """
-    The structured output enforced on the LLM, containing entities, summary, and sentiment.
+    The structured output enforced on the LLM.
     """
 
     entities: list[str] = Field(
         default_factory=list,
-        description="A list of key entities (people, places, organizations) mentioned in the text.",
+        description="Key entities (people, places) mentioned in the text.",
     )
     summary: str = Field(
         ...,
-        description="A concise summary of the provided text, capturing the main themes and context.",
+        description="A concise summary of the main themes and context.",
     )
     sentiment_score: float = Field(
         ...,
-        description="A sentiment score from 0.0 (extremely negative) to 1.0 (extremely positive).",
+        description="Sentiment score from 0.0 (negative) to 1.0 (positive).",
         ge=0.0,
         le=1.0,
     )
     sentiment_label: str = Field(
         ...,
-        description="A label indicating the overall sentiment (e.g., 'Positive', 'Negative', 'Neutral').",
+        description="Sentiment label (e.g., 'Positive', 'Negative', 'Neutral').",
     )

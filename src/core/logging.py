@@ -1,14 +1,16 @@
 import logging
 import sys
+from datetime import UTC, datetime
+
 from pythonjsonlogger import jsonlogger
-from datetime import datetime, UTC
+
 
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """
     Standardizes logs in a JSON format for ELK/Datadog ingestion.
     """
     def add_fields(self, log_record, record, message_dict):
-        super(CustomJsonFormatter, self).add_fields(log_record, record, message_dict)
+        super().add_fields(log_record, record, message_dict)
         if not log_record.get('timestamp'):
             # Standard ISO 8601 timestamp
             now = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
@@ -23,9 +25,11 @@ def setup_logging(level=logging.INFO):
     Global logging configuration to switch from text-based to JSON logs.
     """
     handler = logging.StreamHandler(sys.stdout)
-    formatter = CustomJsonFormatter(
-        '%(timestamp)s %(level)s %(name)s %(message)s %(request_id)s %(latency_ms)s %(cache_status)s'
+    log_format = (
+        '%(timestamp)s %(level)s %(name)s %(message)s '
+        '%(request_id)s %(latency_ms)s %(cache_status)s'
     )
+    formatter = CustomJsonFormatter(log_format)
     handler.setFormatter(formatter)
 
     root_logger = logging.getLogger()

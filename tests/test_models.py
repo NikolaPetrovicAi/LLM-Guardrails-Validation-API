@@ -1,6 +1,8 @@
 import pytest
 from pydantic import ValidationError
+
 from src.models.schemas import ExtractionRequest, StructuredResponse
+
 
 def test_extraction_request_valid():
     """

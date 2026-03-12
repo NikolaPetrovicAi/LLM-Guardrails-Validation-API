@@ -1,11 +1,12 @@
-import pytest
-from unittest.mock import AsyncMock, MagicMock
-from src.services.llm_service import LLMValidatorService
-from src.services.guardrails import PIIMaskingService
-from src.models.schemas import ExtractionRequest, StructuredResponse
-import os
-import shutil
 import tempfile
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from src.models.schemas import ExtractionRequest, StructuredResponse
+from src.services.guardrails import PIIMaskingService
+from src.services.llm_service import LLMValidatorService
+
 
 @pytest.fixture
 def pii_service():

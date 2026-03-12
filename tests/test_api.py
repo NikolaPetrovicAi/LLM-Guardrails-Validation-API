@@ -1,8 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
-from src.main import app
+
+from fastapi.testclient import TestClient
+
 from src.api.deps import get_llm_service
+from src.main import app
 from src.models.schemas import StructuredResponse
 from src.services.llm_service import LLMValidatorService
 
@@ -32,7 +33,9 @@ def test_extract_endpoint_success():
 
     # Mock service instance
     mock_service = MagicMock(spec=LLMValidatorService)
-    mock_service.extract_structured_data = AsyncMock(return_value=StructuredResponse(**mock_data))
+    mock_service.extract_structured_data = AsyncMock(
+        return_value=StructuredResponse(**mock_data)
+    )
 
     # Override the dependency
     app.dependency_overrides[get_llm_service] = lambda: mock_service

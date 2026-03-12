@@ -1,12 +1,14 @@
 from functools import lru_cache
+
 import instructor
 from openai import AsyncOpenAI
 
 from src.core.config import settings
-from src.services.llm_service import LLMValidatorService
 from src.services.guardrails import PIIMaskingService
+from src.services.llm_service import LLMValidatorService
 
-@lru_cache()
+
+@lru_cache
 def get_instructor_client() -> instructor.Instructor:
     """
     Creates and returns a singleton instance of the instructor-wrapped OpenAI client.
@@ -14,7 +16,7 @@ def get_instructor_client() -> instructor.Instructor:
     openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
     return instructor.from_openai(openai_client)
 
-@lru_cache()
+@lru_cache
 def get_pii_masking_service() -> PIIMaskingService:
     """
     Returns a singleton instance of the PIIMaskingService.

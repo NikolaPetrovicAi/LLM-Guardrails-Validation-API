@@ -1,10 +1,12 @@
-import pytest
 from pydantic import SecretStr
+
 from src.core.config import Settings, settings
+
 
 def test_settings_initialization():
     """
-    Test that settings are correctly initialized with default values or from environment.
+    Test that settings are correctly initialized
+    with default values or from environment.
     """
     assert settings.PROJECT_NAME == "Enterprise LLM Guardrails"
     assert settings.VERSION == "0.1.0"

@@ -1,10 +1,11 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     """
     Production-grade configuration management.
-    Sensitive values like API keys are wrapped in SecretStr to prevent accidental logging.
+    Sensitive values are wrapped in SecretStr to prevent accidental logging.
     """
     # App Metadata
     PROJECT_NAME: str = "Enterprise LLM Guardrails"

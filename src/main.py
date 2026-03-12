@@ -1,13 +1,13 @@
-import time
 import logging
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-
-from src.core.logging import setup_logging
-from src.core.config import settings
-from src.core.exceptions import AppException, app_exception_handler
-from src.api.v1.endpoints import router as api_v1_router
+import time
 import uuid
+
+from fastapi import FastAPI, Request
+
+from src.api.v1.endpoints import router as api_v1_router
+from src.core.config import settings
+from src.core.exceptions import AppError, app_exception_handler
+from src.core.logging import setup_logging
 
 # Initialize structured logging
 setup_logging(level=logging.DEBUG if settings.DEBUG else logging.INFO)
@@ -23,7 +23,7 @@ app = FastAPI(
 )
 
 # Register Global Exception Handler
-app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(AppError, app_exception_handler)
 
 # Request Logging Middleware
 @app.middleware("http")
@@ -37,7 +37,7 @@ async def log_requests(request: Request, call_next):
     process_time = (time.time() - start_time) * 1000
     
     logger.info(
-        f"Handled request",
+        "Handled request",
         extra={
             "method": request.method,
             "path": request.url.path,
@@ -66,9 +66,11 @@ async def health_check() -> dict[str, str]:
 if __name__ == "__main__":
     import uvicorn
     # Local development runner with hot-reloading
+    # Bind to 127.0.0.1 for local development to avoid security warnings.
+    # For Docker, 0.0.0.0 is used via the command in the Dockerfile.
     uvicorn.run(
         "src.main:app", 
-        host="0.0.0.0", 
+        host="127.0.0.1", 
         port=8000, 
         reload=settings.DEBUG
     )

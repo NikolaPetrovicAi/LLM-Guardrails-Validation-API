@@ -1,14 +1,18 @@
+import hashlib
 import logging
+
 import instructor
 import openai
-from openai import AsyncOpenAI
-from pydantic import ValidationError
 from diskcache import Cache
-import hashlib
-import json
+from pydantic import ValidationError
 
 from src.core.config import settings
-from src.core.exceptions import LLMTimeoutError, LLMValidationError, AppException, ConfigurationError
+from src.core.exceptions import (
+    AppError,
+    ConfigurationError,
+    LLMTimeoutError,
+    LLMValidationError,
+)
 from src.models.schemas import ExtractionRequest, StructuredResponse
 from src.services.guardrails import PIIMaskingService
 
@@ -79,8 +83,11 @@ class LLMValidatorService:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a professional AI data extractor. Extract meaningful "
-                        "entities, summary, and sentiment metrics from the user's text.",
+                        "content": (
+                            "You are a professional AI data extractor. "
+                            "Extract meaningful entities, summary, and sentiment "
+                            "metrics from the user's text."
+                        ),
                     },
                     {"role": "user", "content": masked_text},
                 ],
@@ -105,13 +112,13 @@ class LLMValidatorService:
         except openai.APITimeoutError as e:
             raise LLMTimeoutError() from e
         except openai.APIError as e:
-            raise AppException(
+            raise AppError(
                 message=f"OpenAI API error: {str(e)}",
                 status_code=502,
                 error_code="OPENAI_API_ERROR"
             ) from e
         except Exception as e:
-            raise AppException(
+            raise AppError(
                 message=f"Unexpected error during extraction: {str(e)}",
                 status_code=500,
                 error_code="INTERNAL_ERROR"

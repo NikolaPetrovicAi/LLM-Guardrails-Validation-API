@@ -1,19 +1,20 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 from src.models.schemas import ExtractionRequest, StructuredResponse
 from src.services.llm_service import LLMValidatorService
+from src.api.deps import get_llm_service
 
 router = APIRouter()
-llm_service = LLMValidatorService()
 
 
 @router.post("/extract", response_model=StructuredResponse, tags=["AI Extraction"])
-async def extract_data(request: ExtractionRequest) -> StructuredResponse:
+async def extract_data(
+    request: ExtractionRequest,
+    llm_service: LLMValidatorService = Depends(get_llm_service)
+) -> StructuredResponse:
     """
     Endpoint to extract structured data (entities, summary, sentiment) from raw text.
+    
+    This endpoint uses Dependency Injection to obtain the LLMValidatorService.
+    All application-specific errors are handled by the global exception handler.
     """
-    try:
-        return await llm_service.extract_structured_data(request)
-    except Exception as e:
-        # Map internal service errors to 500 Internal Server Error
-        # In a real-world scenario, you might want more granular error mapping
-        raise HTTPException(status_code=500, detail=str(e)) from e
+    return await llm_service.extract_structured_data(request)

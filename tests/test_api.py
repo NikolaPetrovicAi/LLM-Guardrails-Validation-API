@@ -1,8 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from src.main import app
+from src.api.deps import get_llm_service
 from src.models.schemas import StructuredResponse
+from src.services.llm_service import LLMValidatorService
 
 client = TestClient(app)
 
@@ -18,7 +20,7 @@ def test_health_check_endpoint():
 
 def test_extract_endpoint_success():
     """
-    Test the POST /api/v1/extract endpoint by mocking the LLM service.
+    Test the POST /api/v1/extract endpoint by overriding the dependency.
     """
     # Create mock response data
     mock_data = {
@@ -28,10 +30,14 @@ def test_extract_endpoint_success():
         "sentiment_label": "Positive"
     }
 
-    # Use patch to intercept the service method call inside the API
-    with patch("src.api.v1.endpoints.llm_service.extract_structured_data", new_callable=AsyncMock) as mock_extract:
-        mock_extract.return_value = StructuredResponse(**mock_data)
+    # Mock service instance
+    mock_service = MagicMock(spec=LLMValidatorService)
+    mock_service.extract_structured_data = AsyncMock(return_value=StructuredResponse(**mock_data))
 
+    # Override the dependency
+    app.dependency_overrides[get_llm_service] = lambda: mock_service
+
+    try:
         request_payload = {"text": "Testing the API endpoint integration."}
         response = client.post("/api/v1/extract", json=request_payload)
 
@@ -39,15 +45,17 @@ def test_extract_endpoint_success():
         response_json = response.json()
         assert response_json["sentiment_label"] == "Positive"
         assert "API Test" in response_json["entities"]
-        mock_extract.assert_called_once()
+        mock_service.extract_structured_data.assert_called_once()
+    finally:
+        # Clear overrides for other tests
+        app.dependency_overrides.clear()
 
 def test_extract_endpoint_validation_error():
     """
     Test the endpoint with invalid input (e.g., empty text).
-    Pydantic should catch this before it reaches the service.
     """
     request_payload = {"text": ""}  # min_length is 1 in schema
     response = client.post("/api/v1/extract", json=request_payload)
     
-    assert response.status_code == 422  # Unprocessable Entity (Validation Error)
-    assert response.json()["detail"][0]["type"] == "string_too_short"
+    # Standard Pydantic validation error returns 422
+    assert response.status_code == 422

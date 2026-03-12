@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from src.services.llm_service import LLMValidatorService
 from src.models.schemas import ExtractionRequest, StructuredResponse
 
@@ -8,7 +8,6 @@ from src.models.schemas import ExtractionRequest, StructuredResponse
 async def test_extract_structured_data_success():
     """
     Test successful extraction of structured data from the LLM service.
-    This test mocks the OpenAI client to avoid real API calls.
     """
     mock_response = StructuredResponse(
         entities=["OpenAI", "FastAPI"],
@@ -17,18 +16,17 @@ async def test_extract_structured_data_success():
         sentiment_label="Positive"
     )
 
-    with patch("src.services.llm_service.instructor.from_openai") as mock_instructor:
-        # Configure the mock client
-        mock_client = AsyncMock()
-        mock_client.chat.completions.create.return_value = mock_response
-        mock_instructor.return_value = mock_client
+    # Mock the instructor-wrapped client
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        service = LLMValidatorService()
-        request = ExtractionRequest(text="This is a test message about OpenAI and FastAPI.")
-        
-        result = await service.extract_structured_data(request)
+    # Inject the mock client into the service
+    service = LLMValidatorService(client=mock_client)
+    request = ExtractionRequest(text="This is a test message about OpenAI and FastAPI.")
+    
+    result = await service.extract_structured_data(request)
 
-        assert isinstance(result, StructuredResponse)
-        assert result.sentiment_label == "Positive"
-        assert "OpenAI" in result.entities
-        mock_client.chat.completions.create.assert_called_once()
+    assert isinstance(result, StructuredResponse)
+    assert result.sentiment_label == "Positive"
+    assert "OpenAI" in result.entities
+    mock_client.chat.completions.create.assert_called_once()

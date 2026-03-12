@@ -1,8 +1,10 @@
 import instructor
+import openai
 from openai import AsyncOpenAI
 from pydantic import ValidationError
 
 from src.core.config import settings
+from src.core.exceptions import LLMTimeoutError, LLMValidationError, AppException, ConfigurationError
 from src.models.schemas import ExtractionRequest, StructuredResponse
 
 
@@ -12,14 +14,16 @@ class LLMValidatorService:
     Ensures that the LLM's output conforms to the predefined Pydantic schemas.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, client: instructor.Instructor, model: str = settings.OPENAI_MODEL) -> None:
         """
-        Initializes the service by wrapping the OpenAI client with instructor.
+        Initializes the service with an instructor-wrapped client.
+        
+        Args:
+            client: The instructor-wrapped OpenAI client.
+            model: The OpenAI model identifier to use.
         """
-        self.client = instructor.from_openai(
-            AsyncOpenAI(api_key=settings.OPENAI_API_KEY.get_secret_value())
-        )
-        self.model = settings.OPENAI_MODEL
+        self.client = client
+        self.model = model
 
     async def extract_structured_data(
         self, request: ExtractionRequest
@@ -34,7 +38,9 @@ class LLMValidatorService:
             StructuredResponse: The validated structured output from the LLM.
 
         Raises:
-            Exception: If an error occurs during the OpenAI API call or Pydantic validation.
+            LLMValidationError: If the LLM output fails schema validation.
+            LLMTimeoutError: If the request to OpenAI times out.
+            AppException: For other API-related errors.
         """
         try:
             # The 'instructor' library uses the 'response_model' parameter
@@ -56,9 +62,29 @@ class LLMValidatorService:
 
         except ValidationError as e:
             # Handle cases where LLM's output did not match the Pydantic schema
-            print(f"Validation error during LLM extraction: {e}")
-            raise
+            raise LLMValidationError(
+                message="LLM output failed structural validation.",
+                details=e.errors()
+            ) from e
+        except openai.AuthenticationError as e:
+            # Handle authentication/API key issues
+            raise ConfigurationError(
+                message=f"LLM Provider Authentication Error: {str(e)}"
+            ) from e
+        except openai.APITimeoutError as e:
+            # Handle request timeouts specifically
+            raise LLMTimeoutError() from e
+        except openai.APIError as e:
+            # Handle general OpenAI API errors
+            raise AppException(
+                message=f"OpenAI API error: {str(e)}",
+                status_code=502,
+                error_code="OPENAI_API_ERROR"
+            ) from e
         except Exception as e:
-            # Handle general OpenAI or connectivity errors
-            print(f"Error during LLM extraction: {e}")
-            raise
+            # Fallback for any other unexpected errors
+            raise AppException(
+                message=f"Unexpected error during extraction: {str(e)}",
+                status_code=500,
+                error_code="INTERNAL_ERROR"
+            ) from e

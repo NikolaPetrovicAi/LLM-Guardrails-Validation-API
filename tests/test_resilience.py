@@ -76,7 +76,8 @@ async def test_openai_provider_api_error_mapping():
         request=MagicMock(), 
         body={}
     )
-    # Manually set status_code since OpenAI's APIError might not set it from constructor easily in mock
+    # Manually set status_code since OpenAI's APIError might not set it 
+    # from constructor easily in mock
     api_error.status_code = 500
     
     mock_client.chat.completions.create_with_completion = AsyncMock(

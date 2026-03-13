@@ -28,14 +28,23 @@ class OpenAIProvider(BaseLLMProvider):
     OpenAI provider implementation using the 'instructor' library.
     """
 
-    def __init__(self, client: instructor.Instructor, model: str = settings.OPENAI_MODEL) -> None:
+    def __init__(
+        self, 
+        client: instructor.Instructor, 
+        model: str = settings.OPENAI_MODEL
+    ) -> None:
         self.client = client
         self.model = model
 
     @retry(
         stop=stop_after_attempt(settings.MAX_RETRIES),
-        wait=wait_exponential(multiplier=settings.RETRY_MIN_SECONDS, max=settings.RETRY_MAX_SECONDS),
-        retry=retry_if_exception_type((openai.RateLimitError, openai.APITimeoutError, openai.InternalServerError)),
+        wait=wait_exponential(
+            multiplier=settings.RETRY_MIN_SECONDS, 
+            max=settings.RETRY_MAX_SECONDS
+        ),
+        retry=retry_if_exception_type(
+            (openai.RateLimitError, openai.APITimeoutError, openai.InternalServerError)
+        ),
         reraise=True
     )
     async def validate(self, text: str) -> tuple[StructuredResponse, Any | None]:
@@ -43,7 +52,8 @@ class OpenAIProvider(BaseLLMProvider):
         Validate and extract structured data from text using OpenAI.
         """
         try:
-            # instructor returns the object directly, but we can access raw response via response_model
+            # instructor returns the object directly, but we can access 
+            # raw response via response_model
             response, raw = await self.client.chat.completions.create_with_completion(
                 model=self.model,
                 messages=[
@@ -70,9 +80,20 @@ class OpenAIProvider(BaseLLMProvider):
             ) from e
         except openai.APITimeoutError as e:
             raise LLMTimeoutError() from e
-        except (openai.APIError, openai.RateLimitError, openai.InternalServerError) as e:
+        except (
+            openai.APIError, 
+            openai.RateLimitError, 
+            openai.InternalServerError
+        ) as e:
             # If it's a retryable error, let it bubble up for tenacity
-            if isinstance(e, (openai.RateLimitError, openai.APITimeoutError, openai.InternalServerError)):
+            if isinstance(
+                e, 
+                (
+                    openai.RateLimitError, 
+                    openai.APITimeoutError, 
+                    openai.InternalServerError
+                )
+            ):
                  raise e
             
             status_code = getattr(e, "status_code", 502)
@@ -100,7 +121,10 @@ class OpenAIProvider(BaseLLMProvider):
                 messages=[
                     {
                         "role": "system",
-                        "content": "Extract structured data. Stream updates as you process the text.",
+                        "content": (
+                            "Extract structured data. "
+                            "Stream updates as you process the text."
+                        ),
                     },
                     {"role": "user", "content": text},
                 ],

@@ -17,7 +17,8 @@ class AnthropicProvider(BaseLLMProvider):
 
     async def validate(self, text: str) -> tuple[StructuredResponse, Any | None]:
         """
-        Validate and extract structured data from text using Anthropic (Not Implemented).
+        Validate and extract structured data from text using Anthropic
+        (Not Implemented).
         """
         raise NotImplementedError("Anthropic provider is not yet implemented.")
 

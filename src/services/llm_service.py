@@ -74,7 +74,9 @@ class LLMValidatorService:
             response, usage = await self.provider.validate(masked_text)
             
             # Step 5: Cost Tracking
-            self.usage_tracker.extract_usage_and_log(usage, getattr(self.provider, "model", "unknown"))
+            self.usage_tracker.extract_usage_and_log(
+                usage, getattr(self.provider, "model", "unknown")
+            )
 
             # Step 6: Store in both caches
             resp_json = response.model_dump_json()

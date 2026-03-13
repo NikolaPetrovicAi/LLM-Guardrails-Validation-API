@@ -26,7 +26,8 @@ class SemanticCacheService:
         self.model = SentenceTransformer(model_name)
         self.threshold = threshold
         self.cache = Cache(cache_path)
-        # In-memory index for fast search (in production use a real Vector DB like Qdrant/Chroma)
+        # In-memory index for fast search 
+        # (in production use a real Vector DB like Qdrant/Chroma)
         self.index: list[tuple[np.ndarray, str]] = [] 
         self._load_index()
 

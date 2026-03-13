@@ -1,6 +1,8 @@
-import pytest
 import numpy as np
+import pytest
+
 from src.services.semantic_cache import SemanticCacheService
+
 
 def test_semantic_cache_logic():
     """

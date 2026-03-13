@@ -36,11 +36,14 @@ async def test_extract_structured_data_success(pii_service, temp_cache_dir):
     mock_provider.model = "test-model"
 
     mock_usage_tracker = MagicMock()
+    mock_semantic_cache = MagicMock()
+    mock_semantic_cache.get.return_value = None  # Ensure semantic cache miss
 
     service = LLMValidatorService(
         provider=mock_provider, 
         pii_service=pii_service,
         usage_tracker=mock_usage_tracker,
+        semantic_cache=mock_semantic_cache,
         cache_path=temp_cache_dir
     )
     request = ExtractionRequest(text="This is a test message about OpenAI and FastAPI.")
@@ -73,11 +76,14 @@ async def test_extract_structured_data_caching(pii_service, temp_cache_dir):
     mock_provider.model = "test-model"
 
     mock_usage_tracker = MagicMock()
+    mock_semantic_cache = MagicMock()
+    mock_semantic_cache.get.return_value = None  # Ensure semantic cache miss
 
     service = LLMValidatorService(
         provider=mock_provider, 
         pii_service=pii_service,
         usage_tracker=mock_usage_tracker,
+        semantic_cache=mock_semantic_cache,
         cache_path=temp_cache_dir
     )
     request = ExtractionRequest(text="Same text")

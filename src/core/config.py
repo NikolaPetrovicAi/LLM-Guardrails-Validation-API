@@ -17,21 +17,39 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # LLM Provider Settings
-    # Field alias allows for flexible environment variable mapping
+    LLM_PROVIDER: str = "openai"  # openai, anthropic
+    
+    # OpenAI Settings
     OPENAI_API_KEY: SecretStr = Field(
         default=SecretStr("fake-key-for-testing"), 
         validation_alias="OPENAI_API_KEY"
     )
-    OPENAI_MODEL: str = "gpt-4-turbo"
+    OPENAI_MODEL: str = "gpt-4o"
+
+    # Anthropic Settings
+    ANTHROPIC_API_KEY: SecretStr = Field(
+        default=SecretStr("fake-key-for-testing"),
+        validation_alias="ANTHROPIC_API_KEY"
+    )
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20240620"
+
+    # Token Pricing (USD per 1k tokens)
+    # Default prices for gpt-4o
+    PRICE_PROMPT_1K: float = 0.005
+    PRICE_COMPLETION_1K: float = 0.015
 
     # Optimization Settings
     CACHE_PATH: str = ".cache"
+    CACHE_EXPIRE: int = 3600  # seconds
+
+    # Resilience Settings
+    MAX_RETRIES: int = 3
+    RETRY_MIN_SECONDS: int = 1
+    RETRY_MAX_SECONDS: int = 10
 
     model_config = SettingsConfigDict(
-        # Load environment variables from .env if present
         env_file=".env",
         env_file_encoding="utf-8",
-        # Case-sensitive prevents ambiguity with system env vars
         case_sensitive=True,
     )
 

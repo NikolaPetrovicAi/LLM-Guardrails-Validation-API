@@ -1,102 +1,85 @@
 import hashlib
 import logging
+from collections.abc import AsyncGenerator
 
-import instructor
-import openai
 from diskcache import Cache
 from pydantic import ValidationError
 
 from src.core.config import settings
 from src.core.exceptions import (
-    AppError,
-    ConfigurationError,
-    LLMTimeoutError,
     LLMValidationError,
 )
 from src.models.schemas import ExtractionRequest, StructuredResponse
 from src.services.guardrails import PIIMaskingService
+from src.services.providers.base import BaseLLMProvider
+from src.services.semantic_cache import SemanticCacheService
+from src.services.usage import UsageTrackerService
 
 logger = logging.getLogger(__name__)
 
 class LLMValidatorService:
     """
-    Service for extracting structured data from text using the 'instructor' library.
-    Ensures that the LLM's output conforms to the predefined Pydantic schemas.
-    Now includes PII masking and response caching.
+    Service for extracting structured data from text using an LLM provider.
+    Supports PII masking, exact & semantic caching, and usage tracking.
     """
 
     def __init__(
         self, 
-        client: instructor.Instructor, 
+        provider: BaseLLMProvider, 
         pii_service: PIIMaskingService,
-        model: str = settings.OPENAI_MODEL,
-        cache_path: str = settings.CACHE_PATH
+        usage_tracker: UsageTrackerService,
+        semantic_cache: SemanticCacheService,
+        cache_path: str = settings.CACHE_PATH,
+        cache_expire: int = settings.CACHE_EXPIRE
     ) -> None:
         """
-        Initializes the service.
+        Initializes the service with hybrid caching capabilities.
         """
-        self.client = client
-        self.model = model
+        self.provider = provider
         self.pii_service = pii_service
+        self.usage_tracker = usage_tracker
+        self.semantic_cache = semantic_cache
         self.cache = Cache(cache_path)
+        self.cache_expire = cache_expire
 
-    def _generate_cache_key(self, text: str, model: str) -> str:
-        """
-        Generates a unique cache key based on the prompt and model.
-        """
-        payload = f"{text}:{model}"
-        return hashlib.sha256(payload.encode()).hexdigest()
+    def _generate_cache_key(self, text: str) -> str:
+        """Generates a unique cache key for exact match caching."""
+        return hashlib.sha256(text.encode()).hexdigest()
 
     async def extract_structured_data(
         self, request: ExtractionRequest
     ) -> StructuredResponse:
         """
-        Asynchronously extract structured information from the input text.
-        Includes PII masking and caching.
+        Extract structured info with hybrid caching and PII protection.
         """
-        # Task 1: PII Masking
-        original_text = request.text
-        masked_text = self.pii_service.mask_text(original_text)
+        # Step 1: PII Masking
+        masked_text = self.pii_service.mask_text(request.text)
         
-        if original_text != masked_text:
-            logger.debug("PII detected and masked in input text.")
-
-        # Task 2: Caching
-        cache_key = self._generate_cache_key(masked_text, self.model)
+        # Step 2: Exact Match Cache (Fastest)
+        cache_key = self._generate_cache_key(masked_text)
         cached_response = self.cache.get(cache_key)
 
         if cached_response:
-            logger.info(
-                "LLM Response Cache HIT",
-                extra={"cache_status": "HIT", "model": self.model}
-            )
+            logger.info("Exact Cache HIT", extra={"cache_status": "EXACT_HIT"})
             return StructuredResponse.model_validate_json(cached_response)
 
-        logger.info(
-            "LLM Response Cache MISS",
-            extra={"cache_status": "MISS", "model": self.model}
-        )
+        # Step 3: Semantic Cache (Smartest)
+        semantic_response = self.semantic_cache.get(masked_text)
+        if semantic_response:
+            # We don't need to log here as semantic_cache already logs HIT
+            return StructuredResponse.model_validate_json(semantic_response)
 
+        # Step 4: LLM Validation via Provider
         try:
-            response: StructuredResponse = await self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a professional AI data extractor. "
-                            "Extract meaningful entities, summary, and sentiment "
-                            "metrics from the user's text."
-                        ),
-                    },
-                    {"role": "user", "content": masked_text},
-                ],
-                response_model=StructuredResponse,
-                max_retries=3,
-            )
+            response, usage = await self.provider.validate(masked_text)
             
-            # Store in cache (as JSON string)
-            self.cache.set(cache_key, response.model_dump_json())
+            # Step 5: Cost Tracking
+            self.usage_tracker.extract_usage_and_log(usage, getattr(self.provider, "model", "unknown"))
+
+            # Step 6: Store in both caches
+            resp_json = response.model_dump_json()
+            self.cache.set(cache_key, resp_json, expire=self.cache_expire)
+            self.semantic_cache.set(masked_text, resp_json, expire=self.cache_expire)
             
             return response
 
@@ -105,21 +88,33 @@ class LLMValidatorService:
                 message="LLM output failed structural validation.",
                 details=e.errors()
             ) from e
-        except openai.AuthenticationError as e:
-            raise ConfigurationError(
-                message=f"LLM Provider Authentication Error: {str(e)}"
-            ) from e
-        except openai.APITimeoutError as e:
-            raise LLMTimeoutError() from e
-        except openai.APIError as e:
-            raise AppError(
-                message=f"OpenAI API error: {str(e)}",
-                status_code=502,
-                error_code="OPENAI_API_ERROR"
-            ) from e
         except Exception as e:
-            raise AppError(
-                message=f"Unexpected error during extraction: {str(e)}",
-                status_code=500,
-                error_code="INTERNAL_ERROR"
-            ) from e
+            raise e
+
+    async def stream_structured_data(
+        self, request: ExtractionRequest
+    ) -> AsyncGenerator[StructuredResponse, None]:
+        """
+        Streams partial extraction results. Bypasses cache for real-time feedback.
+        """
+        masked_text = self.pii_service.mask_text(request.text)
+        
+        async for partial in self.provider.stream(masked_text):
+            yield partial
+
+    async def check_health(self) -> bool:
+        """
+        Check health of LLM provider and cache.
+        """
+        llm_health = await self.provider.check_health()
+        
+        # Simple cache health check
+        cache_health = False
+        try:
+            self.cache.set("__health_check__", "ok", expire=10)
+            if self.cache.get("__health_check__") == "ok":
+                cache_health = True
+        except Exception as e:
+            logger.error(f"Cache health check failed: {str(e)}")
+            
+        return llm_health and cache_health

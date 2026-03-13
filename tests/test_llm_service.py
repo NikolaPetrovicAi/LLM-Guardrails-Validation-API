@@ -31,12 +31,16 @@ async def test_extract_structured_data_success(pii_service, temp_cache_dir):
         sentiment_label="Positive"
     )
 
-    mock_client = MagicMock()
-    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    mock_provider = MagicMock()
+    mock_provider.validate = AsyncMock(return_value=(mock_response, MagicMock()))
+    mock_provider.model = "test-model"
+
+    mock_usage_tracker = MagicMock()
 
     service = LLMValidatorService(
-        client=mock_client, 
+        provider=mock_provider, 
         pii_service=pii_service,
+        usage_tracker=mock_usage_tracker,
         cache_path=temp_cache_dir
     )
     request = ExtractionRequest(text="This is a test message about OpenAI and FastAPI.")
@@ -46,7 +50,7 @@ async def test_extract_structured_data_success(pii_service, temp_cache_dir):
         assert isinstance(result, StructuredResponse)
         assert result.sentiment_label == "Positive"
         assert "OpenAI" in result.entities
-        mock_client.chat.completions.create.assert_called_once()
+        mock_provider.validate.assert_called_once()
     finally:
         # Crucial to close Cache to release file handles on Windows
         if sys.platform == "win32":
@@ -64,12 +68,16 @@ async def test_extract_structured_data_caching(pii_service, temp_cache_dir):
         sentiment_label="Positive"
     )
 
-    mock_client = MagicMock()
-    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+    mock_provider = MagicMock()
+    mock_provider.validate = AsyncMock(return_value=(mock_response, MagicMock()))
+    mock_provider.model = "test-model"
+
+    mock_usage_tracker = MagicMock()
 
     service = LLMValidatorService(
-        client=mock_client, 
+        provider=mock_provider, 
         pii_service=pii_service,
+        usage_tracker=mock_usage_tracker,
         cache_path=temp_cache_dir
     )
     request = ExtractionRequest(text="Same text")
@@ -77,11 +85,11 @@ async def test_extract_structured_data_caching(pii_service, temp_cache_dir):
     try:
         # First call: Cache MISS
         await service.extract_structured_data(request)
-        assert mock_client.chat.completions.create.call_count == 1
+        assert mock_provider.validate.call_count == 1
 
         # Second call: Cache HIT
         await service.extract_structured_data(request)
-        assert mock_client.chat.completions.create.call_count == 1
+        assert mock_provider.validate.call_count == 1
     finally:
         # Crucial to close Cache to release file handles on Windows
         if sys.platform == "win32":

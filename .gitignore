@@ -160,3 +160,5 @@ uv.lock
 
 # Local test cache
 .test_cache/
+.cache_semantic/
+tmp_test_semantic_cache/

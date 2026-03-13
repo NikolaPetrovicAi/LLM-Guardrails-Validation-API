@@ -157,3 +157,6 @@ cython_debug/
 uv.lock
 # Zadržavamo uv.lock jer je preporučeno za aplikacije (portfolio), 
 # ali ga neki ignorišu. Za sada ga ostavljam jer je dobar za reprodukciju.
+
+# Local test cache
+.test_cache/

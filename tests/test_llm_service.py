@@ -1,3 +1,4 @@
+import sys
 import tempfile
 from unittest.mock import AsyncMock, MagicMock
 
@@ -48,7 +49,8 @@ async def test_extract_structured_data_success(pii_service, temp_cache_dir):
         mock_client.chat.completions.create.assert_called_once()
     finally:
         # Crucial to close Cache to release file handles on Windows
-        service.cache.close()
+        if sys.platform == "win32":
+            service.cache.close()
 
 @pytest.mark.asyncio
 async def test_extract_structured_data_caching(pii_service, temp_cache_dir):
@@ -82,4 +84,5 @@ async def test_extract_structured_data_caching(pii_service, temp_cache_dir):
         assert mock_client.chat.completions.create.call_count == 1
     finally:
         # Crucial to close Cache to release file handles on Windows
-        service.cache.close()
+        if sys.platform == "win32":
+            service.cache.close()

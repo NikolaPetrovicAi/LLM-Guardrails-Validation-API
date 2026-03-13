@@ -18,7 +18,10 @@ class Settings(BaseSettings):
 
     # LLM Provider Settings
     # Field alias allows for flexible environment variable mapping
-    OPENAI_API_KEY: SecretStr = Field(..., validation_alias="OPENAI_API_KEY")
+    OPENAI_API_KEY: SecretStr = Field(
+        default=SecretStr("fake-key-for-testing"), 
+        validation_alias="OPENAI_API_KEY"
+    )
     OPENAI_MODEL: str = "gpt-4-turbo"
 
     # Optimization Settings

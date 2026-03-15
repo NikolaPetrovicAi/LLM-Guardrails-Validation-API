@@ -5,10 +5,27 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from src.api.deps import get_llm_service
-from src.models.schemas import ScriptRequest, ViralScriptResponse
+from src.models.schemas import (
+    ExtractionRequest,
+    ScriptRequest,
+    StructuredResponse,
+    ViralScriptResponse,
+)
 from src.services.llm_service import ViralContentService
 
 router = APIRouter()
+
+
+@router.post("/extract", response_model=StructuredResponse, tags=["Legacy"])
+async def extract_structured_data(
+    request: ExtractionRequest,
+    llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
+) -> StructuredResponse:
+    """
+    Legacy endpoint for structured data extraction.
+    Maintained for compatibility with existing LLM-as-a-Judge tests.
+    """
+    return await llm_service.extract_legacy_data(request)
 
 
 @router.post("/generate", response_model=ViralScriptResponse, tags=["Viral Content"])

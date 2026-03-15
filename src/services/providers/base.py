@@ -19,6 +19,15 @@ class BaseLLMProvider(ABC):
         pass
 
     @abstractmethod
+    async def validate_structured(
+        self, text: str, response_model: type[Any]
+    ) -> tuple[Any, Any | None]:
+        """
+        Generic validation for any Pydantic model.
+        """
+        pass
+
+    @abstractmethod
     async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream structured data from text as it's being generated.

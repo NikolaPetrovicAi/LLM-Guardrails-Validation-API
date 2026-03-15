@@ -51,6 +51,14 @@ class OpenAIProvider(BaseLLMProvider):
         """
         Generate a viral script and audit from input parameters.
         """
+        return await self.validate_structured(text, ViralScriptResponse)
+
+    async def validate_structured(
+        self, text: str, response_model: type[Any]
+    ) -> tuple[Any, Any | None]:
+        """
+        Generic validation for any Pydantic model.
+        """
         try:
             response, raw = await self.client.chat.completions.create_with_completion(
                 model=self.model,
@@ -60,14 +68,12 @@ class OpenAIProvider(BaseLLMProvider):
                         "content": (
                             "You are an Elite Viral Video Strategist for TikTok, "
                             "Reels, and Shorts. Your goal is to create "
-                            "high-retention scripts that stop the scroll. "
-                            "For every script, provide a powerful hook, "
-                            "detailed visual segments, and an honest "
-                            "'Viral Audit' evaluating hook strength and retention."
-                        ),                    },
+                            "high-retention scripts that stop the scroll."
+                        ),
+                    },
                     {"role": "user", "content": text},
                 ],
-                response_model=ViralScriptResponse,
+                response_model=response_model,
             )
             
             usage = getattr(raw, "usage", None)

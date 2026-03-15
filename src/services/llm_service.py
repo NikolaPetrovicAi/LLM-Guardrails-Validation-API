@@ -9,7 +9,12 @@ from src.core.config import settings
 from src.core.exceptions import (
     LLMValidationError,
 )
-from src.models.schemas import ScriptRequest, ViralScriptResponse
+from src.models.schemas import (
+    ExtractionRequest,
+    ScriptRequest,
+    StructuredResponse,
+    ViralScriptResponse,
+)
 from src.services.guardrails import PIIMaskingService
 from src.services.providers.base import BaseLLMProvider
 from src.services.semantic_cache import SemanticCacheService
@@ -98,6 +103,33 @@ class ViralContentService:
         except ValidationError as e:
             raise LLMValidationError(
                 message="LLM output failed structural validation.",
+                details=e.errors()
+            ) from e
+        except Exception as e:
+            raise e
+
+    async def extract_legacy_data(
+        self, request: ExtractionRequest
+    ) -> StructuredResponse:
+        """
+        Legacy extraction for compatibility with judge tests.
+        """
+        masked_text = self.pii_service.mask_text(request.text)
+        
+        try:
+            response, usage = await self.provider.validate_structured(
+                masked_text, StructuredResponse
+            )
+            
+            self.usage_tracker.extract_usage_and_log(
+                usage, getattr(self.provider, "model", "unknown")
+            )
+            
+            return response
+
+        except ValidationError as e:
+            raise LLMValidationError(
+                message="Legacy extraction failed structural validation.",
                 details=e.errors()
             ) from e
         except Exception as e:

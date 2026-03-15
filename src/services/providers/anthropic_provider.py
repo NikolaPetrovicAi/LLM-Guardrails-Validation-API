@@ -22,6 +22,14 @@ class AnthropicProvider(BaseLLMProvider):
         """
         raise NotImplementedError("Anthropic provider is not yet implemented.")
 
+    async def validate_structured(
+        self, text: str, response_model: type[Any]
+    ) -> tuple[Any, Any | None]:
+        """
+        Generic validation using Anthropic (Not Implemented).
+        """
+        raise NotImplementedError("Anthropic provider is not yet implemented.")
+
     async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream viral script using Anthropic (Not Implemented).

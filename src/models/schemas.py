@@ -102,3 +102,19 @@ class ViralScriptResponse(BaseModel):
     audit: ViralAudit = Field(
         ..., description="The automated quality check for virality."
     )
+
+
+class EnhancedUsageReport(BaseModel):
+    """
+    Advanced telemetry report linking performance, cost, and quality.
+    Used for ROI and Calibration Score calculations.
+    """
+
+    request_id: str = Field(..., description="Unique identifier for the request.")
+    model_name: str = Field(..., description="Name of the LLM model used.")
+    total_tokens: int = Field(..., description="Total tokens consumed.")
+    cost_usd: float = Field(..., description="Estimated cost in USD.")
+    latency_ms: float = Field(..., description="Request latency in milliseconds.")
+    self_audit_hook_strength: float = Field(
+        ..., description="The hook strength score assigned by the model itself."
+    )

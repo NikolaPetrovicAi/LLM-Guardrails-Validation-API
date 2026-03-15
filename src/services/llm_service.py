@@ -1,5 +1,7 @@
 import hashlib
 import logging
+import time
+import uuid
 from collections.abc import AsyncGenerator
 
 from diskcache import Cache
@@ -86,11 +88,20 @@ class ViralContentService:
 
         # Step 4: LLM Generation
         try:
+            request_id = str(uuid.uuid4())
+            start_time = time.perf_counter()
             response, usage = await self.provider.validate(masked_text)
+            latency_ms = (time.perf_counter() - start_time) * 1000
             
-            # Step 5: Cost Tracking
+            # Step 5: Cost & Quality Tracking
             self.usage_tracker.extract_usage_and_log(
-                usage, getattr(self.provider, "model", "unknown")
+                usage=usage, 
+                model=getattr(self.provider, "model", "unknown"),
+                request_id=request_id,
+                latency_ms=round(latency_ms, 2),
+                self_score=response.audit.hook_strength,
+                input_text=masked_text,
+                output_text=response.model_dump_json()
             )
 
             # Step 6: Store in both caches
@@ -117,12 +128,19 @@ class ViralContentService:
         masked_text = self.pii_service.mask_text(request.text)
         
         try:
+            request_id = str(uuid.uuid4())
+            start_time = time.perf_counter()
             response, usage = await self.provider.validate_structured(
                 masked_text, StructuredResponse
             )
+            latency_ms = (time.perf_counter() - start_time) * 1000
             
             self.usage_tracker.extract_usage_and_log(
-                usage, getattr(self.provider, "model", "unknown")
+                usage=usage, 
+                model=getattr(self.provider, "model", "unknown"),
+                request_id=request_id,
+                latency_ms=round(latency_ms, 2),
+                self_score=0.0  # Legacy doesn't have hook_strength
             )
             
             return response

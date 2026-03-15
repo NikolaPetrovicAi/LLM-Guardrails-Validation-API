@@ -1,6 +1,45 @@
 from pydantic import BaseModel, Field
 
 
+class ExtractionRequest(BaseModel):
+    """
+    Legacy model representing the initial extraction request.
+    Keep for compatibility with existing tests.
+    """
+
+    text: str = Field(
+        ...,
+        description="The raw text to be analyzed by the LLM.",
+        min_length=1,
+    )
+
+
+class StructuredResponse(BaseModel):
+    """
+    Legacy model representing structured output.
+    Keep for compatibility with existing tests.
+    """
+
+    entities: list[str] = Field(
+        default_factory=list,
+        description="Key entities (people, places) mentioned in the text.",
+    )
+    summary: str = Field(
+        ...,
+        description="A concise summary of the main themes and context.",
+    )
+    sentiment_score: float = Field(
+        ...,
+        description="Sentiment score from 0.0 to 1.0.",
+        ge=0.0,
+        le=1.0,
+    )
+    sentiment_label: str = Field(
+        ...,
+        description="Sentiment label (e.g., 'Positive', 'Negative').",
+    )
+
+
 class ScriptRequest(BaseModel):
     """
     Request model for generating a viral video script.
@@ -39,15 +78,15 @@ class ViralAudit(BaseModel):
 
     hook_strength: float = Field(
         ...,
-        description="Score from 0.0 to 1.0 based on how well the hook grabs attention.",
+        description="Score from 0.0 to 1.0 based on how well the hook.",
         ge=0.0,
         le=1.0,
     )
     retention_reasoning: str = Field(
-        ..., description="Explanation of why this script will keep viewers watching."
+        ..., description="Explanation of why this script will keep viewers."
     )
     suggested_edits: list[str] = Field(
-        default_factory=list, description="Specific improvements to increase virality."
+        default_factory=list, description="Specific improvements for virality."
     )
 
 

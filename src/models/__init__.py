@@ -1,3 +1,13 @@
-from src.models.schemas import ScriptRequest, ViralScriptResponse
+from src.models.schemas import (
+    ExtractionRequest,
+    ScriptRequest,
+    StructuredResponse,
+    ViralScriptResponse,
+)
 
-__all__ = ["ScriptRequest", "ViralScriptResponse"]
+__all__ = [
+    "ExtractionRequest",
+    "StructuredResponse",
+    "ScriptRequest",
+    "ViralScriptResponse",
+]

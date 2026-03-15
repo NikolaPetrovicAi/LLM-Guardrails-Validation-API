@@ -58,12 +58,13 @@ class OpenAIProvider(BaseLLMProvider):
                     {
                         "role": "system",
                         "content": (
-                            "You are an Elite Viral Video Strategist for TikTok, Reels, and Shorts. "
-                            "Your goal is to create high-retention scripts that stop the scroll. "
-                            "For every script, provide a powerful hook, detailed visual segments, "
-                            "and an honest 'Viral Audit' evaluating hook strength and retention."
-                        ),
-                    },
+                            "You are an Elite Viral Video Strategist for TikTok, "
+                            "Reels, and Shorts. Your goal is to create "
+                            "high-retention scripts that stop the scroll. "
+                            "For every script, provide a powerful hook, "
+                            "detailed visual segments, and an honest "
+                            "'Viral Audit' evaluating hook strength and retention."
+                        ),                    },
                     {"role": "user", "content": text},
                 ],
                 response_model=ViralScriptResponse,

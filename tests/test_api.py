@@ -27,13 +27,17 @@ def test_generate_endpoint_success():
     mock_data = {
         "hook": "Stop scrolling if you want to master Python!",
         "segments": [
-            {"text": "Trick 1: List comprehensions", "visual_cue": "Code on screen", "duration_seconds": 5.0}
+            {
+                "text": "Trick 1: List comprehensions",
+                "visual_cue": "Code on screen",
+                "duration_seconds": 5.0,
+            }
         ],
         "audit": {
             "hook_strength": 0.9,
             "retention_reasoning": "Strong hook and fast pacing.",
-            "suggested_edits": ["Add background music"]
-        }
+            "suggested_edits": ["Add background music"],
+        },
     }
 
     # Mock service instance

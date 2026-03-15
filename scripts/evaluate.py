@@ -3,7 +3,7 @@ import time
 
 import httpx
 from pydantic import BaseModel
-from typing import List, Optional
+
 
 # Re-using the structure from tests/eval_data but formatted for the API
 class ScriptRequest(BaseModel):
@@ -93,7 +93,8 @@ async def run_eval():
                 err_msg = str(e)[:20]
                 print(f"{case.name:<25} | {'FAILED':<10} | {'-':<12} | {err_msg}...")
 
-    print("\n✅ Evaluation complete. Check logs for viral audit reasoning and cost details.")
+    print("\n✅ Evaluation complete. "
+          "Check logs for viral audit reasoning and cost details.")
 
 if __name__ == "__main__":
     # Ensure the server is running before executing this

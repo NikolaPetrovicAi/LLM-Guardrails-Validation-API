@@ -84,6 +84,8 @@ class UsageTrackerService:
             with open(self.metrics_log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(usage_data) + "\n")
         except Exception as e:
-            logger.error(f"Failed to write telemetry data to {self.metrics_log_path}: {e}")
+            logger.error(
+                f"Failed to write telemetry data to {self.metrics_log_path}: {e}"
+            )
 
         return usage_data

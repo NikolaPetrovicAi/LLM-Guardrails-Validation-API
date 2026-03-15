@@ -80,7 +80,10 @@ def run_analytics():
                 cost_usd=cost_usd,
                 roi=round(roi, 2)
             ))
-            print(f"  ✅ Self: {self_score:.2f} | External: {external_score:.2f} | Gap: {calibration_gap:.4f} | ROI: {roi:.2f}")
+            print(
+                f"  ✅ Self: {self_score:.2f} | External: {external_score:.2f} | "
+                f"Gap: {calibration_gap:.4f} | ROI: {roi:.2f}"
+            )
             
         except Exception as e:
             print(f"  ❌ Error evaluating {request_id}: {str(e)}")

@@ -47,7 +47,10 @@ def calculate_diversity():
         return
 
     if len(scripts) < 2:
-        logger.warning(f"Not enough valid scripts found in logs (found {len(scripts)}). Diversity calculation needs at least 2.")
+        logger.warning(
+            f"Not enough valid scripts found in logs (found {len(scripts)}). "
+            "Diversity calculation needs at least 2."
+        )
         return
 
     logger.info(f"Analyzing {len(scripts)} scripts for creative diversity...")

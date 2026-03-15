@@ -18,14 +18,14 @@ from src.core.exceptions import (
     LLMTimeoutError,
     LLMValidationError,
 )
-from src.models.schemas import StructuredResponse
+from src.models.schemas import ViralScriptResponse
 from src.services.providers.base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
 
 class OpenAIProvider(BaseLLMProvider):
     """
-    OpenAI provider implementation using the 'instructor' library.
+    OpenAI provider implementation for Viral Content Engineer.
     """
 
     def __init__(
@@ -47,30 +47,28 @@ class OpenAIProvider(BaseLLMProvider):
         ),
         reraise=True
     )
-    async def validate(self, text: str) -> tuple[StructuredResponse, Any | None]:
+    async def validate(self, text: str) -> tuple[ViralScriptResponse, Any | None]:
         """
-        Validate and extract structured data from text using OpenAI.
+        Generate a viral script and audit from input parameters.
         """
         try:
-            # instructor returns the object directly, but we can access 
-            # raw response via response_model
             response, raw = await self.client.chat.completions.create_with_completion(
                 model=self.model,
                 messages=[
                     {
                         "role": "system",
                         "content": (
-                            "You are a professional AI data extractor. "
-                            "Extract meaningful entities, summary, and sentiment "
-                            "metrics from the user's text."
+                            "You are an Elite Viral Video Strategist for TikTok, Reels, and Shorts. "
+                            "Your goal is to create high-retention scripts that stop the scroll. "
+                            "For every script, provide a powerful hook, detailed visual segments, "
+                            "and an honest 'Viral Audit' evaluating hook strength and retention."
                         ),
                     },
                     {"role": "user", "content": text},
                 ],
-                response_model=StructuredResponse,
+                response_model=ViralScriptResponse,
             )
             
-            # OpenAI raw response contains usage
             usage = getattr(raw, "usage", None)
             return response, usage
 
@@ -85,7 +83,6 @@ class OpenAIProvider(BaseLLMProvider):
             openai.RateLimitError, 
             openai.InternalServerError
         ) as e:
-            # If it's a retryable error, let it bubble up for tenacity
             if isinstance(
                 e, 
                 (
@@ -106,14 +103,14 @@ class OpenAIProvider(BaseLLMProvider):
             if isinstance(e, LLMValidationError):
                 raise e
             raise AppError(
-                message=f"Unexpected error during extraction: {str(e)}",
+                message=f"Unexpected error during script generation: {str(e)}",
                 status_code=500,
                 error_code="INTERNAL_ERROR"
             ) from e
 
-    async def stream(self, text: str) -> AsyncGenerator[StructuredResponse, None]:
+    async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
         """
-        Asynchronously stream partial extraction results.
+        Stream partial viral script results.
         """
         try:
             stream = await self.client.chat.completions.create(
@@ -122,13 +119,13 @@ class OpenAIProvider(BaseLLMProvider):
                     {
                         "role": "system",
                         "content": (
-                            "Extract structured data. "
-                            "Stream updates as you process the text."
+                            "You are an Elite Viral Video Strategist. "
+                            "Stream the script and audit in real-time."
                         ),
                     },
                     {"role": "user", "content": text},
                 ],
-                response_model=instructor.Partial[StructuredResponse],
+                response_model=instructor.Partial[ViralScriptResponse],
                 stream=True,
             )
             async for partial_obj in stream:
@@ -137,17 +134,16 @@ class OpenAIProvider(BaseLLMProvider):
         except Exception as e:
             logger.error(f"Error during streaming: {str(e)}")
             raise AppError(
-                message="Error during data streaming.",
+                message="Error during script streaming.",
                 status_code=500,
                 error_code="STREAMING_ERROR"
             ) from e
 
     async def check_health(self) -> bool:
         """
-        Simple health check for OpenAI by listing models (minimal cost/latency).
+        Simple health check for OpenAI.
         """
         try:
-            # We use the underlying openai client from instructor
             await self.client.client.models.list()
             return True
         except Exception as e:

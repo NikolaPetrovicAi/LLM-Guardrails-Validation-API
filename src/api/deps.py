@@ -5,7 +5,7 @@ from openai import AsyncOpenAI
 
 from src.core.config import settings
 from src.services.guardrails import PIIMaskingService
-from src.services.llm_service import LLMValidatorService
+from src.services.llm_service import ViralContentService
 from src.services.providers.anthropic_provider import AnthropicProvider
 from src.services.providers.openai_provider import OpenAIProvider
 from src.services.semantic_cache import SemanticCacheService
@@ -56,16 +56,16 @@ def get_llm_provider():
     else:
         raise ValueError(f"Unsupported LLM provider: {settings.LLM_PROVIDER}")
 
-async def get_llm_service() -> LLMValidatorService:
+async def get_llm_service() -> ViralContentService:
     """
-    Dependency provider for LLMValidatorService.
+    Dependency provider for ViralContentService.
     """
     provider = get_llm_provider()
     pii_service = get_pii_masking_service()
     usage_tracker = get_usage_tracker_service()
     semantic_cache = get_semantic_cache_service()
     
-    return LLMValidatorService(
+    return ViralContentService(
         provider=provider, 
         pii_service=pii_service,
         usage_tracker=usage_tracker,

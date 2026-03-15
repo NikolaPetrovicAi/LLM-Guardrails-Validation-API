@@ -34,10 +34,11 @@ class SemanticCacheService:
     def _load_index(self):
         """Load keys from diskcache to rebuild the search index."""
         for key in self.cache:
-            if key.startswith("vec:"):
+            if isinstance(key, str) and key.startswith("vec:"):
                 original_text = key[4:]
                 vector = self.cache.get(key)
-                self.index.append((vector, original_text))
+                if vector is not None:
+                    self.index.append((vector, original_text))
         logger.info(f"Semantic Cache loaded with {len(self.index)} entries.")
 
     def _cosine_similarity(self, v1: np.ndarray, v2: np.ndarray) -> float:

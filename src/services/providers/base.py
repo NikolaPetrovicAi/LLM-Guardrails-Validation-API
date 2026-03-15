@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import Any
 
-from src.models.schemas import StructuredResponse
+from src.models.schemas import ViralScriptResponse
 
 
 class BaseLLMProvider(ABC):
@@ -11,18 +11,18 @@ class BaseLLMProvider(ABC):
     """
 
     @abstractmethod
-    async def validate(self, text: str) -> tuple[StructuredResponse, Any | None]:
+    async def validate(self, text: str) -> tuple[ViralScriptResponse, Any | None]:
         """
         Validate and extract structured data from text.
-        Returns a tuple of (StructuredResponse, usage_object).
+        Returns a tuple of (ViralScriptResponse, usage_object).
         """
         pass
 
     @abstractmethod
-    async def stream(self, text: str) -> AsyncGenerator[StructuredResponse, None]:
+    async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream structured data from text as it's being generated.
-        Yields partial StructuredResponse objects.
+        Yields partial ViralScriptResponse objects.
         """
         pass
 

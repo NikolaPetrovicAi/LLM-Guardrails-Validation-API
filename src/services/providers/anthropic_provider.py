@@ -1,7 +1,8 @@
 import logging
+from collections.abc import AsyncGenerator
 from typing import Any
 
-from src.models.schemas import StructuredResponse
+from src.models.schemas import ViralScriptResponse
 from src.services.providers.base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
@@ -15,12 +16,18 @@ class AnthropicProvider(BaseLLMProvider):
         self.api_key = api_key
         self.model = model
 
-    async def validate(self, text: str) -> tuple[StructuredResponse, Any | None]:
+    async def validate(self, text: str) -> tuple[ViralScriptResponse, Any | None]:
         """
-        Validate and extract structured data from text using Anthropic
-        (Not Implemented).
+        Generate a viral script using Anthropic (Not Implemented).
         """
         raise NotImplementedError("Anthropic provider is not yet implemented.")
+
+    async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
+        """
+        Stream viral script using Anthropic (Not Implemented).
+        """
+        raise NotImplementedError("Anthropic streaming is not yet implemented.")
+        yield ViralScriptResponse() # type: ignore
 
     async def check_health(self) -> bool:
         """

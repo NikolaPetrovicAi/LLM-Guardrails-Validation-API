@@ -9,7 +9,7 @@ from src.core.config import settings
 from src.core.exceptions import (
     LLMValidationError,
 )
-from src.models.schemas import ExtractionRequest, StructuredResponse
+from src.models.schemas import ScriptRequest, ViralScriptResponse
 from src.services.guardrails import PIIMaskingService
 from src.services.providers.base import BaseLLMProvider
 from src.services.semantic_cache import SemanticCacheService
@@ -17,10 +17,10 @@ from src.services.usage import UsageTrackerService
 
 logger = logging.getLogger(__name__)
 
-class LLMValidatorService:
+class ViralContentService:
     """
-    Service for extracting structured data from text using an LLM provider.
-    Supports PII masking, exact & semantic caching, and usage tracking.
+    Service for generating viral video scripts and performing audits.
+    Supports PII masking, hybrid caching, and usage tracking.
     """
 
     def __init__(
@@ -46,30 +46,40 @@ class LLMValidatorService:
         """Generates a unique cache key for exact match caching."""
         return hashlib.sha256(text.encode()).hexdigest()
 
-    async def extract_structured_data(
-        self, request: ExtractionRequest
-    ) -> StructuredResponse:
+    def _format_request_text(self, request: ScriptRequest) -> str:
+        """Formats the ScriptRequest into a prompt for the LLM."""
+        return (
+            f"Topic: {request.topic}\n"
+            f"Target Audience: {request.target_audience}\n"
+            f"Tone: {request.tone}\n"
+            f"Platform: {request.platform}"
+        )
+
+    async def generate_viral_script(
+        self, request: ScriptRequest
+    ) -> ViralScriptResponse:
         """
-        Extract structured info with hybrid caching and PII protection.
+        Generates a viral script with hybrid caching and PII protection.
         """
-        # Step 1: PII Masking
-        masked_text = self.pii_service.mask_text(request.text)
+        prompt_text = self._format_request_text(request)
         
-        # Step 2: Exact Match Cache (Fastest)
+        # Step 1: PII Masking
+        masked_text = self.pii_service.mask_text(prompt_text)
+        
+        # Step 2: Exact Match Cache
         cache_key = self._generate_cache_key(masked_text)
         cached_response = self.cache.get(cache_key)
 
         if cached_response:
             logger.info("Exact Cache HIT", extra={"cache_status": "EXACT_HIT"})
-            return StructuredResponse.model_validate_json(cached_response)
+            return ViralScriptResponse.model_validate_json(cached_response)
 
-        # Step 3: Semantic Cache (Smartest)
+        # Step 3: Semantic Cache
         semantic_response = self.semantic_cache.get(masked_text)
         if semantic_response:
-            # We don't need to log here as semantic_cache already logs HIT
-            return StructuredResponse.model_validate_json(semantic_response)
+            return ViralScriptResponse.model_validate_json(semantic_response)
 
-        # Step 4: LLM Validation via Provider
+        # Step 4: LLM Generation
         try:
             response, usage = await self.provider.validate(masked_text)
             
@@ -93,13 +103,14 @@ class LLMValidatorService:
         except Exception as e:
             raise e
 
-    async def stream_structured_data(
-        self, request: ExtractionRequest
-    ) -> AsyncGenerator[StructuredResponse, None]:
+    async def stream_viral_script(
+        self, request: ScriptRequest
+    ) -> AsyncGenerator[ViralScriptResponse, None]:
         """
-        Streams partial extraction results. Bypasses cache for real-time feedback.
+        Streams partial script results. Bypasses cache for real-time feedback.
         """
-        masked_text = self.pii_service.mask_text(request.text)
+        prompt_text = self._format_request_text(request)
+        masked_text = self.pii_service.mask_text(prompt_text)
         
         async for partial in self.provider.stream(masked_text):
             yield partial
@@ -110,7 +121,6 @@ class LLMValidatorService:
         """
         llm_health = await self.provider.check_health()
         
-        # Simple cache health check
         cache_health = False
         try:
             self.cache.set("__health_check__", "ok", expire=10)

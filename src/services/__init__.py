@@ -1,3 +1,3 @@
-from src.services.llm_service import LLMValidatorService
+from src.services.llm_service import ViralContentService
 
-__all__ = ["LLMValidatorService"]
+__all__ = ["ViralContentService"]

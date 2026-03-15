@@ -1,3 +1,3 @@
-from src.models.schemas import ExtractionRequest, StructuredResponse
+from src.models.schemas import ScriptRequest, ViralScriptResponse
 
-__all__ = ["ExtractionRequest", "StructuredResponse"]
+__all__ = ["ScriptRequest", "ViralScriptResponse"]

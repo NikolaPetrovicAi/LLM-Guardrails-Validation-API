@@ -31,7 +31,7 @@ def test_llm_quality_fast(case):
 
     # 2. Format actual output
     actual_output = (
-        f"Summary: {data['summary']}\n" f"Entities: {', '.join(data['entities'])}"
+        f"Summary: {data['summary']}\nEntities: {', '.join(data['entities'])}"
     )
 
     # 3. Create Test Case

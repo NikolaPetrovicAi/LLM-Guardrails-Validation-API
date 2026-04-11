@@ -12,12 +12,12 @@ class BaseLLMProvider(ABC):
 
     @abstractmethod
     async def validate(
-        self, 
-        text: str, 
+        self,
+        text: str,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> tuple[ViralScriptResponse, Any | None]:
         """
         Validate and extract structured data from text.
@@ -27,13 +27,13 @@ class BaseLLMProvider(ABC):
 
     @abstractmethod
     async def validate_structured(
-        self, 
-        text: str, 
+        self,
+        text: str,
         response_model: type[Any] | None,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> tuple[Any, Any | None]:
         """
         Validates input against a specific Pydantic model and returns usage.
@@ -41,15 +41,14 @@ class BaseLLMProvider(ABC):
         """
         pass
 
-
     @abstractmethod
     async def stream(
-        self, 
+        self,
         text: str,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream structured data from text as it's being generated.

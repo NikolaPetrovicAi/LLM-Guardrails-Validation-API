@@ -1,12 +1,14 @@
-import os
-import yaml
 import logging
+import os
 import threading
-from typing import Optional, Dict, List
+
+import yaml
 from jinja2 import Template
+
 from src.models.schemas import PromptDefinition
 
 logger = logging.getLogger(__name__)
+
 
 class PromptManager:
     """
@@ -16,7 +18,7 @@ class PromptManager:
 
     def __init__(self, prompts_dir: str = "src/prompts") -> None:
         self.prompts_dir = prompts_dir
-        self._prompts: Dict[str, Dict[str, PromptDefinition]] = {}
+        self._prompts: dict[str, dict[str, PromptDefinition]] = {}
         self._lock = threading.Lock()
         self.load_all_prompts()
 
@@ -34,22 +36,33 @@ class PromptManager:
                 if filename.endswith(".yaml") or filename.endswith(".yml"):
                     path = os.path.join(self.prompts_dir, filename)
                     try:
-                        with open(path, "r", encoding="utf-8") as f:
+                        with open(path, encoding="utf-8") as f:
                             data = yaml.safe_load(f)
                             prompt_def = PromptDefinition(**data)
-                            
+
                             if prompt_def.id not in self._prompts:
                                 self._prompts[prompt_def.id] = {}
-                            
-                            self._prompts[prompt_def.id][prompt_def.version] = prompt_def
-                            shadow_info = f" (Shadow: {prompt_def.shadow_version})" if prompt_def.shadow_version else ""
-                            print(f"✅ Loaded prompt: {prompt_def.id} v{prompt_def.version}{shadow_info}")
-                            logger.info(f"Loaded prompt: {prompt_def.id} v{prompt_def.version}")
+
+                            self._prompts[prompt_def.id][prompt_def.version] = (
+                                prompt_def
+                            )
+                            shadow_info = (
+                                f" (Shadow: {prompt_def.shadow_version})"
+                                if prompt_def.shadow_version
+                                else ""
+                            )
+                            print(
+                                f"✅ Loaded prompt: {prompt_def.id} "
+                                f"v{prompt_def.version}{shadow_info}"
+                            )
+                            logger.info(
+                                f"Loaded prompt: {prompt_def.id} v{prompt_def.version}"
+                            )
                     except Exception as e:
                         logger.error(f"Failed to load prompt from {path}: {e}")
 
     def get_prompt(
-        self, prompt_id: str, version: Optional[str] = None
+        self, prompt_id: str, version: str | None = None
     ) -> PromptDefinition:
         """
         Retrieves a specific prompt by ID and version.
@@ -60,17 +73,19 @@ class PromptManager:
                 raise ValueError(f"Prompt with id '{prompt_id}' not found.")
 
             versions = self._prompts[prompt_id]
-            
+
             if version:
                 if version not in versions:
-                    raise ValueError(f"Version '{version}' for prompt '{prompt_id}' not found.")
+                    raise ValueError(
+                        f"Version '{version}' for prompt '{prompt_id}' not found."
+                    )
                 return versions[version]
 
             # Get latest version (lexicographical sort of version strings)
             latest_version = sorted(versions.keys())[-1]
             return versions[latest_version]
 
-    def get_shadow_prompt(self, prompt_id: str) -> Optional[PromptDefinition]:
+    def get_shadow_prompt(self, prompt_id: str) -> PromptDefinition | None:
         """
         Retrieves the shadow version of a prompt if configured in the latest version.
         """

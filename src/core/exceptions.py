@@ -11,6 +11,7 @@ from starlette.status import (
 
 class AppError(Exception):
     """Base class for all application-specific exceptions."""
+
     def __init__(
         self,
         message: str,
@@ -24,8 +25,10 @@ class AppError(Exception):
         self.error_code = error_code
         self.details = details
 
+
 class LLMValidationError(AppError):
     """Raised when the LLM output fails schema validation."""
+
     def __init__(self, message: str, details: Any = None):
         super().__init__(
             message=message,
@@ -34,8 +37,10 @@ class LLMValidationError(AppError):
             details=details,
         )
 
+
 class LLMTimeoutError(AppError):
     """Raised when the LLM provider times out."""
+
     def __init__(self, message: str = "LLM request timed out"):
         super().__init__(
             message=message,
@@ -43,14 +48,17 @@ class LLMTimeoutError(AppError):
             error_code="LLM_TIMEOUT_ERROR",
         )
 
+
 class ConfigurationError(AppError):
     """Raised when there is a configuration-related issue."""
+
     def __init__(self, message: str):
         super().__init__(
             message=message,
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="CONFIGURATION_ERROR",
         )
+
 
 async def app_exception_handler(request: Request, exc: AppError) -> JSONResponse:
     """

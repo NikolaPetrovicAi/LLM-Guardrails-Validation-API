@@ -9,6 +9,7 @@ from src.services.llm_service import ViralContentService
 
 client = TestClient(app)
 
+
 def test_health_check_endpoint():
     """
     Test the /health check endpoint.
@@ -18,6 +19,7 @@ def test_health_check_endpoint():
     data = response.json()
     assert data["status"] == "ok"
     assert "project" in data
+
 
 def test_generate_endpoint_success():
     """
@@ -34,7 +36,10 @@ def test_generate_endpoint_success():
             }
         ],
         "audit": {
+            "critique_negative": "Too slow",
+            "critique_positive": "Good hook",
             "hook_strength": 0.9,
+            "retention_score": 0.8,
             "retention_reasoning": "Strong hook and fast pacing.",
             "suggested_edits": ["Add background music"],
         },
@@ -54,7 +59,7 @@ def test_generate_endpoint_success():
             "topic": "Python Tricks",
             "target_audience": "Devs",
             "tone": "Hype",
-            "platform": "TikTok"
+            "platform": "TikTok",
         }
         response = client.post("/api/v1/generate", json=request_payload)
 
@@ -67,12 +72,13 @@ def test_generate_endpoint_success():
         # Clear overrides for other tests
         app.dependency_overrides.clear()
 
+
 def test_generate_endpoint_validation_error():
     """
     Test the endpoint with invalid input (missing required fields).
     """
-    request_payload = {"topic": "Only Topic"} 
+    request_payload = {"topic": "Only Topic"}
     response = client.post("/api/v1/generate", json=request_payload)
-    
+
     # Standard Pydantic validation error returns 422
     assert response.status_code == 422

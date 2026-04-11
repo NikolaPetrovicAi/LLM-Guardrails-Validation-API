@@ -4,7 +4,7 @@ from re import Pattern
 
 class PIIMaskingService:
     """
-    Service for identifying and masking Personally Identifiable Information (PII) 
+    Service for identifying and masking Personally Identifiable Information (PII)
     using regular expressions.
     """
 

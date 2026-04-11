@@ -149,9 +149,7 @@ def generate_report(results: list[EvalResult]):
 
         # Detailed Results
         f.write("## 📝 Detailed Results\n\n")
-        f.write(
-            "| Case | Rel. | Faith. | Clean | Fair | OK |\n"
-        )
+        f.write("| Case | Rel. | Faith. | Clean | Fair | OK |\n")
         f.write("| :--- | :---: | :---: | :---: | :---: | :---: |\n")
 
         for r in results:

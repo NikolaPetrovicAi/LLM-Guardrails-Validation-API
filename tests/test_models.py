@@ -11,12 +11,14 @@ def test_extraction_request_valid():
     req = ExtractionRequest(text="This is valid text.")
     assert req.text == "This is valid text."
 
+
 def test_extraction_request_too_short():
     """
     Test ExtractionRequest with empty text (should fail).
     """
     with pytest.raises(ValidationError):
         ExtractionRequest(text="")
+
 
 def test_structured_response_valid():
     """
@@ -26,10 +28,11 @@ def test_structured_response_valid():
         entities=["test"],
         summary="A summary",
         sentiment_score=0.5,
-        sentiment_label="Neutral"
+        sentiment_label="Neutral",
     )
     assert res.sentiment_score == 0.5
     assert res.sentiment_label == "Neutral"
+
 
 def test_structured_response_invalid_sentiment_score():
     """
@@ -40,5 +43,5 @@ def test_structured_response_invalid_sentiment_score():
             entities=["test"],
             summary="A summary",
             sentiment_score=1.5,  # Must be between 0 and 1
-            sentiment_label="Positive"
+            sentiment_label="Positive",
         )

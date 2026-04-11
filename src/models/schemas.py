@@ -84,13 +84,19 @@ class ViralAudit(BaseModel):
     )
     hook_strength: float = Field(
         ...,
-        description="Score from 0.0 to 1.0. BE CRITICAL. 0.9+ is only for viral perfection.",
+        description=(
+            "Score from 0.0 to 1.0. BE CRITICAL. "
+            "0.9+ is only for viral perfection."
+        ),
         ge=0.0,
         le=1.0,
     )
     retention_score: float = Field(
         ...,
-        description="Score from 0.0 to 1.0 representing the likelihood of viewers watching until the end.",
+        description=(
+            "Score from 0.0 to 1.0 representing the likelihood "
+            "of viewers watching until the end."
+        ),
         ge=0.0,
         le=1.0,
     )

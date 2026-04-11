@@ -16,7 +16,12 @@ from src.services.llm_service import ViralContentService
 router = APIRouter()
 
 
-@router.post("/extract", response_model=StructuredResponse, tags=["Legacy"], include_in_schema=False)
+@router.post(
+    "/extract",
+    response_model=StructuredResponse,
+    tags=["Legacy"],
+    include_in_schema=False,
+)
 async def extract_structured_data(
     request: ExtractionRequest,
     llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
@@ -47,6 +52,7 @@ async def generate_script_stream(
     """
     Endpoint to stream viral script generation in real-time.
     """
+
     async def event_generator() -> AsyncGenerator[str, None]:
         async for partial in llm_service.stream_viral_script(request):
             yield f"data: {partial.model_dump_json()}\n\n"
@@ -58,7 +64,6 @@ async def generate_script_stream(
 async def health_check(
     llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
 ) -> dict:
-
     """
     Check the health of the LLM provider and cache.
     """

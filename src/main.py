@@ -25,6 +25,7 @@ app = FastAPI(
 # Register Global Exception Handler
 app.add_exception_handler(AppError, app_exception_handler)
 
+
 # Request Logging Middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -35,7 +36,7 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     process_time = (time.time() - start_time) * 1000
-    
+
     logger.info(
         "Handled request",
         extra={
@@ -43,13 +44,15 @@ async def log_requests(request: Request, call_next):
             "path": request.url.path,
             "status": response.status_code,
             "latency_ms": round(process_time, 2),
-            "request_id": request_id
-        }
+            "request_id": request_id,
+        },
     )
     return response
 
+
 # Include API V1 Router
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/health", tags=["Health"])
 async def health_check() -> dict[str, str]:
@@ -60,17 +63,14 @@ async def health_check() -> dict[str, str]:
         "status": "ok",
         "project": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
+
     # Local development runner with hot-reloading
     # Bind to 127.0.0.1 for local development to avoid security warnings.
     # For Docker, 0.0.0.0 is used via the command in the Dockerfile.
-    uvicorn.run(
-        "src.main:app", 
-        host="127.0.0.1", 
-        port=8000, 
-        reload=settings.DEBUG
-    )
+    uvicorn.run("src.main:app", host="127.0.0.1", port=8000, reload=settings.DEBUG)

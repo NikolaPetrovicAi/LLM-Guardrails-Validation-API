@@ -7,19 +7,23 @@ from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 class UsageTrackerService:
     """
     Service for tracking token usage and estimating costs.
     Now includes persistent logging for advanced metrics.
     """
 
-    def __init__(self, price_prompt_1k: float = settings.PRICE_PROMPT_1K, 
-                 price_completion_1k: float = settings.PRICE_COMPLETION_1K,
-                 metrics_log_path: str = "logs/metrics_data.jsonl") -> None:
+    def __init__(
+        self,
+        price_prompt_1k: float = settings.PRICE_PROMPT_1K,
+        price_completion_1k: float = settings.PRICE_COMPLETION_1K,
+        metrics_log_path: str = "logs/metrics_data.jsonl",
+    ) -> None:
         self.price_prompt_1k = price_prompt_1k
         self.price_completion_1k = price_completion_1k
         self.metrics_log_path = metrics_log_path
-        
+
         # Ensure the logs directory exists
         os.makedirs(os.path.dirname(self.metrics_log_path), exist_ok=True)
 
@@ -32,16 +36,16 @@ class UsageTrackerService:
         return round(prompt_cost + completion_cost, 6)
 
     def extract_usage_and_log(
-        self, 
-        usage: Any | None, 
-        model: str, 
-        request_id: str = "N/A", 
-        latency_ms: float = 0.0, 
+        self,
+        usage: Any | None,
+        model: str,
+        request_id: str = "N/A",
+        latency_ms: float = 0.0,
         self_score: float = 0.0,
         input_text: str = "",
         output_text: str = "",
         prompt_id: str = "N/A",
-        prompt_version: str = "N/A"
+        prompt_version: str = "N/A",
     ) -> dict[str, Any]:
         """
         Extract usage data from LLM response, calculate cost, and log telemetry.
@@ -53,10 +57,10 @@ class UsageTrackerService:
         # Handle different usage object formats (OpenAI, Anthropic)
         prompt_tokens = getattr(usage, "prompt_tokens", 0)
         completion_tokens = getattr(usage, "completion_tokens", 0)
-        
+
         # If OpenAI usage object has total_tokens but not the others
         if not prompt_tokens and hasattr(usage, "total_tokens"):
-             prompt_tokens = usage.total_tokens
+            prompt_tokens = usage.total_tokens
 
         total_tokens = prompt_tokens + completion_tokens
         estimated_cost = self.calculate_cost(prompt_tokens, completion_tokens)
@@ -74,14 +78,11 @@ class UsageTrackerService:
             "self_audit_hook_strength": self_score,
             "input_text": input_text,
             "output_text": output_text,
-            "usage_tracked": True
+            "usage_tracked": True,
         }
 
         # Structured standard logging
-        logger.info(
-            "LLM Usage tracked",
-            extra=usage_data
-        )
+        logger.info("LLM Usage tracked", extra=usage_data)
 
         # Persistent telemetry logging (JSONL)
         try:

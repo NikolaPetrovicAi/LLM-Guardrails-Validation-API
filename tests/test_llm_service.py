@@ -26,7 +26,9 @@ def temp_cache_dir():
 
 
 @pytest.mark.asyncio
-async def test_generate_viral_script_success(pii_service, temp_cache_dir, prompt_manager):
+async def test_generate_viral_script_success(
+    pii_service, temp_cache_dir, prompt_manager
+):
     """
     Test successful generation of viral script from the service.
     """
@@ -36,7 +38,10 @@ async def test_generate_viral_script_success(pii_service, temp_cache_dir, prompt
             {"text": "Python tips", "visual_cue": "Code", "duration_seconds": 5.0}
         ],
         audit={
+            "critique_negative": "Too slow",
+            "critique_positive": "Good hook",
             "hook_strength": 0.9,
+            "retention_score": 0.8,
             "retention_reasoning": "Fast",
             "suggested_edits": [],
         },
@@ -73,7 +78,9 @@ async def test_generate_viral_script_success(pii_service, temp_cache_dir, prompt
 
 
 @pytest.mark.asyncio
-async def test_generate_viral_script_caching(pii_service, temp_cache_dir, prompt_manager):
+async def test_generate_viral_script_caching(
+    pii_service, temp_cache_dir, prompt_manager
+):
     """
     Verify that repeated requests for the same input use the cache.
     """
@@ -83,7 +90,10 @@ async def test_generate_viral_script_caching(pii_service, temp_cache_dir, prompt
             {"text": "Python tips", "visual_cue": "Code", "duration_seconds": 5.0}
         ],
         audit={
+            "critique_negative": "Too slow",
+            "critique_positive": "Good hook",
             "hook_strength": 0.9,
+            "retention_score": 0.8,
             "retention_reasoning": "Fast",
             "suggested_edits": [],
         },

@@ -32,7 +32,7 @@ def test_llm_quality_judge(case):
 
     # 2. Format actual output for the judge
     actual_output = (
-        f"Summary: {data['summary']}\n" f"Entities: {', '.join(data['entities'])}"
+        f"Summary: {data['summary']}\nEntities: {', '.join(data['entities'])}"
     )
 
     # 3. Create DeepEval Test Case

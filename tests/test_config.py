@@ -12,11 +12,13 @@ def test_settings_initialization():
     assert settings.VERSION == "0.1.0"
     assert isinstance(settings.OPENAI_API_KEY, SecretStr)
 
+
 def test_settings_api_v1_str():
     """
     Test that API_V1_STR is correctly formatted.
     """
     assert settings.API_V1_STR.startswith("/api/v1")
+
 
 def test_custom_settings():
     """

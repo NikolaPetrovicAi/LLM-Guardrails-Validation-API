@@ -23,15 +23,14 @@ from src.services.providers.base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
 
+
 class OpenAIProvider(BaseLLMProvider):
     """
     OpenAI provider implementation for Viral Content Engineer.
     """
 
     def __init__(
-        self, 
-        client: instructor.Instructor, 
-        model: str = settings.OPENAI_MODEL
+        self, client: instructor.Instructor, model: str = settings.OPENAI_MODEL
     ) -> None:
         self.client = client
         self.model = model
@@ -39,42 +38,36 @@ class OpenAIProvider(BaseLLMProvider):
     @retry(
         stop=stop_after_attempt(settings.MAX_RETRIES),
         wait=wait_exponential(
-            multiplier=settings.RETRY_MIN_SECONDS, 
-            max=settings.RETRY_MAX_SECONDS
+            multiplier=settings.RETRY_MIN_SECONDS, max=settings.RETRY_MAX_SECONDS
         ),
         retry=retry_if_exception_type(
             (openai.RateLimitError, openai.APITimeoutError, openai.InternalServerError)
         ),
-        reraise=True
+        reraise=True,
     )
     async def validate(
-        self, 
-        text: str, 
+        self,
+        text: str,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> tuple[ViralScriptResponse, Any | None]:
         """
         Generate a viral script and audit from input parameters.
         """
         return await self.validate_structured(
-            text, 
-            ViralScriptResponse, 
-            system_prompt, 
-            model, 
-            temperature, 
-            max_tokens
+            text, ViralScriptResponse, system_prompt, model, temperature, max_tokens
         )
 
     async def validate_structured(
-        self, 
-        text: str, 
+        self,
+        text: str,
         response_model: type[Any] | None,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> tuple[Any, Any | None]:
         """
         Generic validation for any Pydantic model.
@@ -90,7 +83,10 @@ class OpenAIProvider(BaseLLMProvider):
             effective_max_tokens = max_tokens or 1000
 
             if response_model:
-                response, raw = await self.client.chat.completions.create_with_completion(
+                (
+                    response,
+                    raw,
+                ) = await self.client.chat.completions.create_with_completion(
                     model=effective_model,
                     messages=[
                         {"role": "system", "content": effective_system},
@@ -98,7 +94,7 @@ class OpenAIProvider(BaseLLMProvider):
                     ],
                     response_model=response_model,
                     temperature=effective_temp,
-                    max_tokens=effective_max_tokens
+                    max_tokens=effective_max_tokens,
                 )
                 usage = getattr(raw, "usage", None)
                 return response, usage
@@ -111,7 +107,7 @@ class OpenAIProvider(BaseLLMProvider):
                         {"role": "user", "content": text},
                     ],
                     temperature=effective_temp,
-                    max_tokens=effective_max_tokens
+                    max_tokens=effective_max_tokens,
                 )
                 content = raw.choices[0].message.content
                 usage = getattr(raw, "usage", None)
@@ -124,25 +120,25 @@ class OpenAIProvider(BaseLLMProvider):
         except openai.APITimeoutError as e:
             raise LLMTimeoutError() from e
         except (
-            openai.APIError, 
-            openai.RateLimitError, 
-            openai.InternalServerError
+            openai.APIError,
+            openai.RateLimitError,
+            openai.InternalServerError,
         ) as e:
             if isinstance(
-                e, 
+                e,
                 (
-                    openai.RateLimitError, 
-                    openai.APITimeoutError, 
-                    openai.InternalServerError
-                )
+                    openai.RateLimitError,
+                    openai.APITimeoutError,
+                    openai.InternalServerError,
+                ),
             ):
-                 raise e
-            
+                raise e
+
             status_code = getattr(e, "status_code", 502)
             raise AppError(
                 message=f"OpenAI API error: {str(e)}",
                 status_code=status_code,
-                error_code="OPENAI_API_ERROR"
+                error_code="OPENAI_API_ERROR",
             ) from e
         except Exception as e:
             if isinstance(e, LLMValidationError):
@@ -150,16 +146,16 @@ class OpenAIProvider(BaseLLMProvider):
             raise AppError(
                 message=f"Unexpected error during script generation: {str(e)}",
                 status_code=500,
-                error_code="INTERNAL_ERROR"
+                error_code="INTERNAL_ERROR",
             ) from e
 
     async def stream(
-        self, 
+        self,
         text: str,
         system_prompt: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
-        max_tokens: int | None = None
+        max_tokens: int | None = None,
     ) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream partial viral script results.
@@ -182,7 +178,7 @@ class OpenAIProvider(BaseLLMProvider):
                 response_model=instructor.Partial[ViralScriptResponse],
                 stream=True,
                 temperature=effective_temp,
-                max_tokens=effective_max_tokens
+                max_tokens=effective_max_tokens,
             )
             async for partial_obj in stream:
                 yield partial_obj
@@ -192,7 +188,7 @@ class OpenAIProvider(BaseLLMProvider):
             raise AppError(
                 message="Error during script streaming.",
                 status_code=500,
-                error_code="STREAMING_ERROR"
+                error_code="STREAMING_ERROR",
             ) from e
 
     async def check_health(self) -> bool:

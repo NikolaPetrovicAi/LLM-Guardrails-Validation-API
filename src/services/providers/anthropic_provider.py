@@ -7,6 +7,7 @@ from src.services.providers.base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
 
+
 class AnthropicProvider(BaseLLMProvider):
     """
     Placeholder for Anthropic provider implementation.
@@ -35,7 +36,7 @@ class AnthropicProvider(BaseLLMProvider):
         Stream viral script using Anthropic (Not Implemented).
         """
         raise NotImplementedError("Anthropic streaming is not yet implemented.")
-        yield ViralScriptResponse() # type: ignore
+        yield ViralScriptResponse()  # type: ignore
 
     async def check_health(self) -> bool:
         """

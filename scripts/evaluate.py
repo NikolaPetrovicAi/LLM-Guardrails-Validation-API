@@ -12,9 +12,11 @@ class ScriptRequest(BaseModel):
     tone: str
     platform: str
 
+
 class EvalCase(BaseModel):
     name: str
     request: ScriptRequest
+
 
 EVAL_DATASET = [
     EvalCase(
@@ -23,7 +25,7 @@ EVAL_DATASET = [
             topic="3 Python tricks for faster code",
             target_audience="Junior Developers",
             tone="Hype",
-            platform="TikTok"
+            platform="TikTok",
         ),
     ),
     EvalCase(
@@ -32,7 +34,7 @@ EVAL_DATASET = [
             topic="How to survive your first week as a software engineer",
             target_audience="New Grads",
             tone="Empathetic",
-            platform="Reels"
+            platform="Reels",
         ),
     ),
     EvalCase(
@@ -41,7 +43,7 @@ EVAL_DATASET = [
             topic="OpenAI's latest model leak",
             target_audience="Tech Enthusiasts",
             tone="Urgent",
-            platform="Shorts"
+            platform="Shorts",
         ),
     ),
     EvalCase(
@@ -50,12 +52,13 @@ EVAL_DATASET = [
             topic="Why React developers are total idiots compared to Vue users",
             target_audience="JS Community",
             tone="Controversial",
-            platform="TikTok"
+            platform="TikTok",
         ),
     ),
 ]
 
 BASE_URL = "http://localhost:8000/api/v1"
+
 
 async def run_eval():
     print("🚀 Starting Viral Content Engineer Benchmarking...\n")
@@ -70,18 +73,17 @@ async def run_eval():
             start_time = time.perf_counter()
             try:
                 response = await client.post(
-                    f"{BASE_URL}/generate",
-                    json=case.request.model_dump()
+                    f"{BASE_URL}/generate", json=case.request.model_dump()
                 )
                 end_time = time.perf_counter()
-                
+
                 if response.status_code == 200:
                     data = response.json()
                     latency = (end_time - start_time) * 1000
                     # Extract hook strength from the viral audit
                     audit = data.get("audit", {})
                     hook_strength = audit.get("hook_strength", "N/A")
-                    
+
                     print(
                         f"{case.name:<25} | {'SUCCESS':<10} | "
                         f"{latency:<12.2f} | {hook_strength:<15}"
@@ -93,8 +95,11 @@ async def run_eval():
                 err_msg = str(e)[:20]
                 print(f"{case.name:<25} | {'FAILED':<10} | {'-':<12} | {err_msg}...")
 
-    print("\n✅ Evaluation complete. "
-          "Check logs for viral audit reasoning and cost details.")
+    print(
+        "\n✅ Evaluation complete. "
+        "Check logs for viral audit reasoning and cost details."
+    )
+
 
 if __name__ == "__main__":
     # Ensure the server is running before executing this

@@ -9,16 +9,18 @@ class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """
     Standardizes logs in a JSON format for ELK/Datadog ingestion.
     """
+
     def add_fields(self, log_record, record, message_dict):
         super().add_fields(log_record, record, message_dict)
-        if not log_record.get('timestamp'):
+        if not log_record.get("timestamp"):
             # Standard ISO 8601 timestamp
-            now = datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-            log_record['timestamp'] = now
-        if log_record.get('level'):
-            log_record['level'] = log_record['level'].upper()
+            now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            log_record["timestamp"] = now
+        if log_record.get("level"):
+            log_record["level"] = log_record["level"].upper()
         else:
-            log_record['level'] = record.levelname
+            log_record["level"] = record.levelname
+
 
 def setup_logging(level=logging.INFO):
     """
@@ -26,8 +28,8 @@ def setup_logging(level=logging.INFO):
     """
     handler = logging.StreamHandler(sys.stdout)
     log_format = (
-        '%(timestamp)s %(level)s %(name)s %(message)s '
-        '%(request_id)s %(latency_ms)s %(cache_status)s'
+        "%(timestamp)s %(level)s %(name)s %(message)s "
+        "%(request_id)s %(latency_ms)s %(cache_status)s"
     )
     formatter = CustomJsonFormatter(log_format)
     handler.setFormatter(formatter)
@@ -36,7 +38,7 @@ def setup_logging(level=logging.INFO):
     # Remove any existing handlers
     for h in root_logger.handlers[:]:
         root_logger.removeHandler(h)
-        
+
     root_logger.addHandler(handler)
     root_logger.setLevel(level)
 

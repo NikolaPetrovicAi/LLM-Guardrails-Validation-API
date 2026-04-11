@@ -6,11 +6,17 @@ import pytest
 from src.models.schemas import ScriptRequest, ViralScriptResponse
 from src.services.guardrails import PIIMaskingService
 from src.services.llm_service import ViralContentService
+from src.services.prompt_manager import PromptManager
 
 
 @pytest.fixture
 def pii_service():
     return PIIMaskingService()
+
+
+@pytest.fixture
+def prompt_manager():
+    return PromptManager()
 
 
 @pytest.fixture
@@ -20,7 +26,7 @@ def temp_cache_dir():
 
 
 @pytest.mark.asyncio
-async def test_generate_viral_script_success(pii_service, temp_cache_dir):
+async def test_generate_viral_script_success(pii_service, temp_cache_dir, prompt_manager):
     """
     Test successful generation of viral script from the service.
     """
@@ -48,6 +54,7 @@ async def test_generate_viral_script_success(pii_service, temp_cache_dir):
         pii_service=pii_service,
         usage_tracker=mock_usage_tracker,
         semantic_cache=mock_semantic_cache,
+        prompt_manager=prompt_manager,
         cache_path=temp_cache_dir,
     )
     request = ScriptRequest(
@@ -66,7 +73,7 @@ async def test_generate_viral_script_success(pii_service, temp_cache_dir):
 
 
 @pytest.mark.asyncio
-async def test_generate_viral_script_caching(pii_service, temp_cache_dir):
+async def test_generate_viral_script_caching(pii_service, temp_cache_dir, prompt_manager):
     """
     Verify that repeated requests for the same input use the cache.
     """
@@ -94,6 +101,7 @@ async def test_generate_viral_script_caching(pii_service, temp_cache_dir):
         pii_service=pii_service,
         usage_tracker=mock_usage_tracker,
         semantic_cache=mock_semantic_cache,
+        prompt_manager=prompt_manager,
         cache_path=temp_cache_dir,
     )
     request = ScriptRequest(

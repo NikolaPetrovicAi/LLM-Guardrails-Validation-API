@@ -11,7 +11,14 @@ class BaseLLMProvider(ABC):
     """
 
     @abstractmethod
-    async def validate(self, text: str) -> tuple[ViralScriptResponse, Any | None]:
+    async def validate(
+        self, 
+        text: str, 
+        system_prompt: str | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None
+    ) -> tuple[ViralScriptResponse, Any | None]:
         """
         Validate and extract structured data from text.
         Returns a tuple of (ViralScriptResponse, usage_object).
@@ -20,15 +27,30 @@ class BaseLLMProvider(ABC):
 
     @abstractmethod
     async def validate_structured(
-        self, text: str, response_model: type[Any]
+        self, 
+        text: str, 
+        response_model: type[Any] | None,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None
     ) -> tuple[Any, Any | None]:
         """
-        Generic validation for any Pydantic model.
+        Validates input against a specific Pydantic model and returns usage.
+        If response_model is None, returns raw text.
         """
         pass
 
+
     @abstractmethod
-    async def stream(self, text: str) -> AsyncGenerator[ViralScriptResponse, None]:
+    async def stream(
+        self, 
+        text: str,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None
+    ) -> AsyncGenerator[ViralScriptResponse, None]:
         """
         Stream structured data from text as it's being generated.
         Yields partial ViralScriptResponse objects.

@@ -39,7 +39,9 @@ class UsageTrackerService:
         latency_ms: float = 0.0, 
         self_score: float = 0.0,
         input_text: str = "",
-        output_text: str = ""
+        output_text: str = "",
+        prompt_id: str = "N/A",
+        prompt_version: str = "N/A"
     ) -> dict[str, Any]:
         """
         Extract usage data from LLM response, calculate cost, and log telemetry.
@@ -62,6 +64,8 @@ class UsageTrackerService:
         usage_data = {
             "request_id": request_id,
             "model_name": model,
+            "prompt_id": prompt_id,
+            "prompt_version": prompt_version,
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens,

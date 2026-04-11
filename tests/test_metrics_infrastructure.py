@@ -1,12 +1,20 @@
-import os
 import json
-import pytest
+import os
 import tempfile
 from unittest.mock import AsyncMock, MagicMock
-from src.models.schemas import ScriptRequest, ViralScriptResponse, ViralAudit, ScriptSegment
+
+import pytest
+
+from src.models.schemas import (
+    ScriptRequest,
+    ScriptSegment,
+    ViralAudit,
+    ViralScriptResponse,
+)
+from src.services.guardrails import PIIMaskingService
 from src.services.llm_service import ViralContentService
 from src.services.usage import UsageTrackerService
-from src.services.guardrails import PIIMaskingService
+
 
 @pytest.fixture
 def temp_metrics_log():
@@ -87,7 +95,7 @@ async def test_metrics_logging_integration(temp_metrics_log, pii_service):
     # 5. Validation of the log file
     assert os.path.exists(temp_metrics_log)
     
-    with open(temp_metrics_log, "r", encoding="utf-8") as f:
+    with open(temp_metrics_log, encoding="utf-8") as f:
         lines = f.readlines()
         
     assert len(lines) == 3

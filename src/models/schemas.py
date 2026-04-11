@@ -76,9 +76,21 @@ class ViralAudit(BaseModel):
     Automated quality and engagement audit of the generated script.
     """
 
+    critique_negative: str = Field(
+        ..., description="Be brutal. What is WRONG with this script? Why will it FAIL?"
+    )
+    critique_positive: str = Field(
+        ..., description="What are the strong points of the script?"
+    )
     hook_strength: float = Field(
         ...,
-        description="Score from 0.0 to 1.0 based on how well the hook.",
+        description="Score from 0.0 to 1.0. BE CRITICAL. 0.9+ is only for viral perfection.",
+        ge=0.0,
+        le=1.0,
+    )
+    retention_score: float = Field(
+        ...,
+        description="Score from 0.0 to 1.0 representing the likelihood of viewers watching until the end.",
         ge=0.0,
         le=1.0,
     )
@@ -117,4 +129,69 @@ class EnhancedUsageReport(BaseModel):
     latency_ms: float = Field(..., description="Request latency in milliseconds.")
     self_audit_hook_strength: float = Field(
         ..., description="The hook strength score assigned by the model itself."
+    )
+
+
+class PromptConfig(BaseModel):
+    """
+    Model parameters for the LLM.
+    """
+
+    temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(default=1000, gt=0)
+    model_name: str = Field(default="gpt-4o")
+
+
+class PromptMetadata(BaseModel):
+    """
+    Metadata for prompt lifecycle management.
+    """
+
+    performance_target: float = Field(
+        default=0.8, description="Target hook_strength for this prompt."
+    )
+    last_optimized_at: str | None = Field(
+        None, description="ISO timestamp of the last APO run."
+    )
+    is_active: bool = Field(default=True, description="Whether this version is active.")
+
+
+class PromptDefinition(BaseModel):
+    """
+    Schema for externalized prompt definitions (Prompt Ops).
+    """
+
+    id: str = Field(..., description="Unique identifier for the prompt.")
+    version: str = Field(..., description="Semantic version of the prompt.")
+    system_prompt: str = Field(
+        ..., description="The system prompt template with placeholders."
+    )
+    user_prompt_template: str = Field(
+        ..., description="The user prompt template with placeholders."
+    )
+    config: PromptConfig = Field(
+        default_factory=PromptConfig, description="LLM configuration parameters."
+    )
+    metadata: PromptMetadata = Field(
+        default_factory=PromptMetadata, description="Prompt lifecycle metadata."
+    )
+    shadow_version: str | None = Field(
+        None, description="Version to run in shadow mode for this prompt ID."
+    )
+
+
+class PromptSuggestion(BaseModel):
+    """
+    Structured output for Automated Prompt Optimization (APO).
+    Contains improved system and user templates.
+    """
+
+    improved_system_prompt: str = Field(
+        ..., description="The optimized system prompt template."
+    )
+    improved_user_template: str = Field(
+        ..., description="The optimized user prompt template."
+    )
+    reasoning: str = Field(
+        ..., description="Explanation of why these changes were made."
     )

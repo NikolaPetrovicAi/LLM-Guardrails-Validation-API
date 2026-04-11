@@ -1,7 +1,8 @@
-import os
-import sys
 import json
 import logging
+import os
+import sys
+
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
@@ -29,13 +30,14 @@ def calculate_diversity():
     scripts = []
     # We want the last 15 valid scripts
     try:
-        with open(log_file, "r", encoding="utf-8") as f:
+        with open(log_file, encoding="utf-8") as f:
             lines = f.readlines()
             for line in reversed(lines):
                 try:
                     data = json.loads(line)
                     output_text = data.get("output_text", "").strip()
-                    # Filter out empty or very short outputs (like errors or empty responses)
+                    # Filter out empty or very short outputs 
+                    # (like errors or empty responses)
                     if output_text and len(output_text) > 50:
                         scripts.append(output_text)
                     if len(scripts) >= 15:
@@ -128,7 +130,7 @@ def calculate_diversity():
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(report_content)
     
-    print(f"✅ Diversity calculation complete.")
+    print("✅ Diversity calculation complete.")
     print(f"📊 Diversity Score: {diversity_score:.4f}")
     print(f"📄 Report saved to: {report_file}")
 

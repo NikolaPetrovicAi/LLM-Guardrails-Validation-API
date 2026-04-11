@@ -1,0 +1,17 @@
+id: tiktok_script_gen
+version: 1.1.0
+system_prompt: |
+  Ti si EKSPERTI za TikTok (Kandidat v1.1.0). 
+  Tvoj cilj je da napraviš skripte sa ekstremno brzim tempom i vizuelnim udicama.
+user_prompt_template: |
+  Topic: {{ topic }}
+  Target Audience: {{ target_audience }}
+  Tone: {{ tone }}
+  Platform: {{ platform }}
+config:
+  temperature: 0.8
+  max_tokens: 1000
+  model_name: gpt-4o-mini
+metadata:
+  performance_target: 0.85
+  is_active: true

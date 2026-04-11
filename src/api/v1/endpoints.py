@@ -16,7 +16,7 @@ from src.services.llm_service import ViralContentService
 router = APIRouter()
 
 
-@router.post("/extract", response_model=StructuredResponse, tags=["Legacy"])
+@router.post("/extract", response_model=StructuredResponse, tags=["Legacy"], include_in_schema=False)
 async def extract_structured_data(
     request: ExtractionRequest,
     llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
@@ -39,7 +39,7 @@ async def generate_script(
     return await llm_service.generate_viral_script(request)
 
 
-@router.post("/generate-stream", tags=["Viral Content"])
+@router.post("/generate-stream", tags=["Viral Content"], include_in_schema=False)
 async def generate_script_stream(
     request: ScriptRequest,
     llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
@@ -54,10 +54,11 @@ async def generate_script_stream(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-@router.get("/health", tags=["Health"])
+@router.get("/health", tags=["Health"], include_in_schema=False)
 async def health_check(
     llm_service: Annotated[ViralContentService, Depends(get_llm_service)],
 ) -> dict:
+
     """
     Check the health of the LLM provider and cache.
     """

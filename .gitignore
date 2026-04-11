@@ -161,4 +161,16 @@ uv.lock
 # Local test cache
 .test_cache/
 .cache_semantic/
+.cache_semantic_v2/
 tmp_test_semantic_cache/
+tmp_test_semantic_tiered/
+
+# Debug and Demo files
+debug_settings*.py
+demo_cache.py
+demo_cache_db/
+demo_logs.txt
+dummy_cache/
+dummy_cache_apo/
+dummy_cache_lifecycle/
+test_langfuse_v4_api.py

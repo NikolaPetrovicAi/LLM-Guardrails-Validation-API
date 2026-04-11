@@ -1,16 +1,18 @@
-# 🚀 Advanced Viral Metrics Report
+# 🔬 Advanced AI Quality Report
 
-Generated at: 2026-03-15 20:22:31
+Audit Date: 2026-04-11 11:19:29
 
-## 📊 Calibration & ROI Analysis
+## 📊 Model Calibration & Efficiency
 
-| Request ID | Model | Self Score | External Score | Calibration Gap | Cost (USD) | ROI |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| c6956747... | gpt-4o | 0.95 | 1.00 | 0.0500 | $0.006885 | 145.24 |
-| 584babbd... | gpt-4o | 0.90 | 1.00 | 0.1000 | $0.007905 | 126.50 |
-| d5dc0cae... | gpt-4o | 0.90 | 0.91 | 0.0091 | $0.007960 | 114.21 |
-
-
-## 💡 Executive Summary
-
-Prosečna kalibracija sistema je **94.7%**, a najisplativiji model je **gpt-4o**.
+| Trace ID | V | Model | Self Score | Judge Score | MCE | ROI |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| 418135ab | 1.1.0 | gpt-4o | 0.85 | 0.70 | 0.1526 | 1.0x |
+| 4c4d5cdc | 1.0.0 | gpt-4o | 0.70 | 0.71 | 0.0081 | 0.8x |
+| 8cc4c0f9 | 1.1.0 | gpt-4o | 0.90 | 0.60 | 0.2960 | 0.9x |
+| 00a40604 | 1.1.0 | gpt-4o | 0.90 | 0.72 | 0.1776 | 0.9x |
+| 814b5d0a | 1.0.0 | gpt-4o | 0.70 | 0.79 | 0.0924 | 0.8x |
+| 0fbb33a6 | 1.1.0 | gpt-4o | 0.80 | 0.67 | 0.1262 | 1.0x |
+| eb9aa1a5 | 1.1.0 | gpt-4o | 0.85 | 0.80 | 0.0453 | 0.8x |
+| 7f88724a | 1.0.0 | gpt-4o | 0.90 | 0.64 | 0.2599 | 1.1x |
+| 6afa8cf5 | 1.0.0 | gpt-4o | 0.90 | 0.78 | 0.1235 | 1.0x |
+| 738fa9a4 | 1.0.0 | gpt-4o | 0.90 | 0.69 | 0.2060 | 1.1x |

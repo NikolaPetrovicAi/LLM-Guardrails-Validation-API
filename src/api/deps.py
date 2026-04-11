@@ -1,16 +1,34 @@
 from functools import lru_cache
 
 import instructor
+from langfuse import Langfuse
 from openai import AsyncOpenAI
 
 from src.core.config import settings
 from src.services.guardrails import PIIMaskingService
 from src.services.llm_service import ViralContentService
+from src.services.prompt_manager import PromptManager
+from src.services.optimizer import PromptOptimizerService
 from src.services.providers.anthropic_provider import AnthropicProvider
 from src.services.providers.openai_provider import OpenAIProvider
 from src.services.semantic_cache import SemanticCacheService
 from src.services.usage import UsageTrackerService
 
+
+@lru_cache
+def get_langfuse_client() -> Langfuse | None:
+    """
+    Creates and returns a singleton instance of the Langfuse client.
+    Returns None if keys are not configured.
+    """
+    if not settings.LANGFUSE_PUBLIC_KEY or not settings.LANGFUSE_SECRET_KEY:
+        return None
+        
+    return Langfuse(
+        public_key=settings.LANGFUSE_PUBLIC_KEY,
+        secret_key=settings.LANGFUSE_SECRET_KEY.get_secret_value(),
+        host=settings.LANGFUSE_BASE_URL
+    )
 
 @lru_cache
 def get_instructor_client() -> instructor.Instructor:
@@ -41,6 +59,13 @@ def get_semantic_cache_service() -> SemanticCacheService:
     """
     return SemanticCacheService()
 
+@lru_cache
+def get_prompt_manager() -> PromptManager:
+    """
+    Returns a singleton instance of the PromptManager.
+    """
+    return PromptManager()
+
 def get_llm_provider():
     """
     Factory to get the configured LLM provider.
@@ -64,10 +89,19 @@ async def get_llm_service() -> ViralContentService:
     pii_service = get_pii_masking_service()
     usage_tracker = get_usage_tracker_service()
     semantic_cache = get_semantic_cache_service()
+    prompt_manager = get_prompt_manager()
+    langfuse = get_langfuse_client()
+    
+    # Optional: Configure a separate provider for Critic (e.g. gpt-4o-mini)
+    # For now, we reuse the same provider or a default OpenAI one
+    optimizer = PromptOptimizerService(critic_provider=provider)
     
     return ViralContentService(
         provider=provider, 
         pii_service=pii_service,
         usage_tracker=usage_tracker,
-        semantic_cache=semantic_cache
+        semantic_cache=semantic_cache,
+        prompt_manager=prompt_manager,
+        optimizer=optimizer,
+        langfuse=langfuse
     )

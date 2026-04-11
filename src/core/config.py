@@ -1,6 +1,10 @@
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+import os
 
+# Explicitly load .env as pydantic-settings might have issues on Python 3.14
+load_dotenv(dotenv_path=".env")
 
 class Settings(BaseSettings):
     """
@@ -47,10 +51,16 @@ class Settings(BaseSettings):
     RETRY_MIN_SECONDS: int = 1
     RETRY_MAX_SECONDS: int = 10
 
+    # Langfuse Settings
+    LANGFUSE_PUBLIC_KEY: str | None = None
+    LANGFUSE_SECRET_KEY: SecretStr | None = None
+    LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore"
     )
 
 # Singleton instance to be used across the application

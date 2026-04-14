@@ -1,9 +1,11 @@
 import asyncio
 import hashlib
 import logging
+import random
 import time
 import uuid
 from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Optional
 
 from diskcache import Cache
 from langfuse import Langfuse
@@ -27,6 +29,9 @@ from src.services.providers.base import BaseLLMProvider
 from src.services.semantic_cache import SemanticCacheService
 from src.services.usage import UsageTrackerService
 
+if TYPE_CHECKING:
+    from src.services.evaluator import DeepEvalService
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,6 +50,7 @@ class ViralContentService:
         semantic_cache: SemanticCacheService,
         prompt_manager: PromptManager,
         optimizer: PromptOptimizerService | None = None,
+        eval_service: Optional["DeepEvalService"] = None,
         langfuse: Langfuse | None = None,
         cache_path: str = settings.CACHE_PATH,
         cache_expire: int = settings.CACHE_EXPIRE,
@@ -58,6 +64,7 @@ class ViralContentService:
         self.semantic_cache = semantic_cache
         self.prompt_manager = prompt_manager
         self.optimizer = optimizer
+        self.eval_service = eval_service
         self.langfuse = langfuse
         self.cache = Cache(cache_path)
         self.cache_expire = cache_expire
@@ -98,6 +105,9 @@ class ViralContentService:
         )
         latency_ms = (time.perf_counter() - start_time) * 1000
 
+        # Inject Trace ID into the response object
+        response.trace_id = request_id
+
         # Step 5: Cost & Quality Tracking
         usage_data = self.usage_tracker.extract_usage_and_log(
             usage=usage,
@@ -127,7 +137,11 @@ class ViralContentService:
                     as_type="generation",
                     trace_context={
                         "trace_id": request_id,
-                        "tags": [request.platform, type_label],
+                        "tags": [
+                            request.platform,
+                            f"env:{type_label.lower()}",
+                            f"version:{prompt_def.version}",
+                        ],
                     },
                     input=request.model_dump(),
                     output=response.model_dump(),
@@ -158,6 +172,9 @@ class ViralContentService:
                         value=response.audit.retention_score,
                         comment=f"Platform: {request.platform}",
                     )
+                    
+                    # Mandatory in Langfuse v4 for correct metadata export
+                    gen.end()
 
                 # Force flush (optional but recommended for short-lived processes)
                 self.langfuse.flush()
@@ -217,20 +234,35 @@ class ViralContentService:
                 )
 
         if shadow_prompt_def:
-            # Create a separate ID for Shadow in Langfuse to avoid collisions
+            # We use a NEW shadow_trace_id for Shadow to ensure it's in its own trace
             shadow_trace_id = uuid.uuid4().hex
             logger.info(
                 f"🚀 Shadow Deployment ACTIVE: Triggering "
                 f"{shadow_prompt_def.version} in background "
-                f"(Trace: {shadow_trace_id})"
+                f"(Shadow Trace: {shadow_trace_id})"
             )
 
             # Run shadow version asynchronously with a small initial delay
             async def run_shadow_with_delay():
-                await asyncio.sleep(0.5)
-                await self._run_llm_generation(
-                    request, shadow_prompt_def, shadow_trace_id, is_shadow=True
-                )
+                try:
+                    await asyncio.sleep(0.5)
+                    shadow_response = await self._run_llm_generation(
+                        request, shadow_prompt_def, shadow_trace_id, is_shadow=True
+                    )
+
+                    # Optional: Automated Evaluation for SHADOW
+                    if self.eval_service and random.random() < settings.EVAL_SAMPLE_RATE:
+                        logger.info(f"🧪 Triggering DeepEval for SHADOW (Trace: {shadow_trace_id})")
+                        await self.eval_service.evaluate_and_log(
+                            trace_id=shadow_trace_id,
+                            input_text=f"Topic: {request.topic}, Audience: {request.target_audience}",
+                            actual_output=shadow_response.to_eval_text(),
+                        )
+                except Exception as shadow_err:
+                    logger.error(
+                        f"❌ Shadow Deployment background task failed: {str(shadow_err)}",
+                        exc_info=True
+                    )
 
             asyncio.create_task(run_shadow_with_delay())
 
@@ -240,7 +272,17 @@ class ViralContentService:
                 request, prompt_def, request_id, is_shadow=False
             )
 
-            # Step 6: Automated Prompt Optimization (APO)
+            # Step 6: Automated Evaluation for PROD
+            if self.eval_service and random.random() < settings.EVAL_SAMPLE_RATE:
+                asyncio.create_task(
+                    self.eval_service.evaluate_and_log(
+                        trace_id=request_id,
+                        input_text=f"Topic: {request.topic}, Audience: {request.target_audience}",
+                        actual_output=response.to_eval_text(),
+                    )
+                )
+
+            # Step 7: Automated Prompt Optimization (APO)
             if self.optimizer:
                 # Run APO asynchronously so we don't block the user
                 asyncio.create_task(
@@ -249,7 +291,7 @@ class ViralContentService:
                     )
                 )
 
-            # Step 7: Store in both caches
+            # Step 8: Store in both caches
             resp_json = response.model_dump_json()
             self.cache.set(cache_key, resp_json, expire=self.cache_expire)
             self.semantic_cache.set(

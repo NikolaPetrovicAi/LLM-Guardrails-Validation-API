@@ -147,3 +147,40 @@ async def test_apo_triggered_on_low_score(mock_provider, mock_prompt_manager):
 
     # Verify optimizer was called
     mock_optimizer.critique_and_suggest.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_deepeval_triggered_prod_and_shadow(mock_provider, mock_prompt_manager):
+    pii_service = MagicMock()
+    pii_service.mask_text.return_value = "Masked Text"
+
+    mock_eval_service = AsyncMock()
+    
+    mock_semantic_cache = MagicMock()
+    mock_semantic_cache.get.return_value = None
+
+    service = ViralContentService(
+        provider=mock_provider,
+        pii_service=pii_service,
+        usage_tracker=MagicMock(),
+        semantic_cache=mock_semantic_cache,
+        prompt_manager=mock_prompt_manager,
+        eval_service=mock_eval_service,
+        cache_path="dummy_cache_deepeval",
+    )
+    service.cache = MagicMock()
+    service.cache.get.return_value = None
+
+    request = ScriptRequest(
+        topic="AI", target_audience="Devs", tone="Cool", platform="TikTok"
+    )
+
+    # Force EVAL_SAMPLE_RATE to 1.0 for this test
+    with patch("src.services.llm_service.settings.EVAL_SAMPLE_RATE", 1.0):
+        await service.generate_viral_script(request, version="1.0.0")
+
+        # Wait for background tasks
+        await asyncio.sleep(0.6)
+
+        # Should be called twice: once for PROD, once for SHADOW
+        assert mock_eval_service.evaluate_and_log.call_count == 2

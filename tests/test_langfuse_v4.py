@@ -107,4 +107,5 @@ async def test_langfuse_logging_v4_issue(mock_langfuse):
     # VERIFICATION: score_trace should be called on the generation object
     gen = mock_langfuse.start_as_current_observation.return_value.__enter__.return_value
     assert gen.score_trace.called
+    assert gen.end.called
     assert mock_langfuse.flush.called

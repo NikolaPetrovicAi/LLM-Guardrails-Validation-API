@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Optimization Settings
     CACHE_PATH: str = ".cache"
     CACHE_EXPIRE: int = 3600  # seconds
+    EVAL_SAMPLE_RATE: float = 1.0  # Sample rate for DeepEval (LLM-as-a-Judge)
 
     # Resilience Settings
     MAX_RETRIES: int = 3

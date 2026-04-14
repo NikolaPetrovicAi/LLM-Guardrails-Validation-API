@@ -113,6 +113,9 @@ class ViralScriptResponse(BaseModel):
     The final structured response containing the script and its viral audit.
     """
 
+    trace_id: str | None = Field(
+        None, description="The Langfuse/W3C compatible trace ID."
+    )
     hook: str = Field(..., description="The opening 'grabber' to stop the scroll.")
     segments: list[ScriptSegment] = Field(
         ..., description="The full chronological flow of the video."
@@ -120,6 +123,20 @@ class ViralScriptResponse(BaseModel):
     audit: ViralAudit = Field(
         ..., description="The automated quality check for virality."
     )
+
+    def to_eval_text(self) -> str:
+        """
+        Returns a clean, human-readable text representation of the script
+        for LLM-as-a-Judge evaluation. Excludes internal metadata and audit.
+        """
+        eval_text = f"HOOK: {self.hook}\n\n"
+        for i, segment in enumerate(self.segments):
+            eval_text += (
+                f"SEGMENT {i + 1} ({segment.duration_seconds}s):\n"
+                f"TEXT: {segment.text}\n"
+                f"VISUAL: {segment.visual_cue}\n\n"
+            )
+        return eval_text.strip()
 
 
 class EnhancedUsageReport(BaseModel):

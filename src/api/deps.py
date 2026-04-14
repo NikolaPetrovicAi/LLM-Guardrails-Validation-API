@@ -5,6 +5,7 @@ from langfuse import Langfuse
 from openai import AsyncOpenAI
 
 from src.core.config import settings
+from src.services.evaluator import DeepEvalService
 from src.services.guardrails import PIIMaskingService
 from src.services.llm_service import ViralContentService
 from src.services.optimizer import PromptOptimizerService
@@ -65,6 +66,16 @@ def get_semantic_cache_service() -> SemanticCacheService:
 
 
 @lru_cache
+def get_deepeval_service() -> DeepEvalService:
+    """
+    Returns a singleton instance of the DeepEvalService.
+    """
+    langfuse = get_langfuse_client()
+    pii_service = get_pii_masking_service()
+    return DeepEvalService(langfuse=langfuse, pii_service=pii_service)
+
+
+@lru_cache
 def get_prompt_manager() -> PromptManager:
     """
     Returns a singleton instance of the PromptManager.
@@ -98,6 +109,7 @@ async def get_llm_service() -> ViralContentService:
     semantic_cache = get_semantic_cache_service()
     prompt_manager = get_prompt_manager()
     langfuse = get_langfuse_client()
+    deepeval_service = get_deepeval_service()
 
     # Optional: Configure a separate provider for Critic (e.g. gpt-4o-mini)
     # For now, we reuse the same provider or a default OpenAI one
@@ -110,5 +122,6 @@ async def get_llm_service() -> ViralContentService:
         semantic_cache=semantic_cache,
         prompt_manager=prompt_manager,
         optimizer=optimizer,
+        eval_service=deepeval_service,
         langfuse=langfuse,
     )

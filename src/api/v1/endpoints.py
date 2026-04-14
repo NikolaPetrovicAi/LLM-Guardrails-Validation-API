@@ -1,12 +1,10 @@
 from collections.abc import AsyncGenerator
-import random
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
-from src.api.deps import get_llm_service, get_deepeval_service
-from src.core.config import settings
+from src.api.deps import get_llm_service
 from src.models.schemas import (
     ExtractionRequest,
     ScriptRequest,
@@ -14,7 +12,6 @@ from src.models.schemas import (
     ViralScriptResponse,
 )
 from src.services.llm_service import ViralContentService
-from src.services.evaluator import DeepEvalService
 
 router = APIRouter()
 

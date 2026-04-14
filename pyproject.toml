@@ -40,6 +40,9 @@ ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+"check_*.py" = ["S106", "S101"]
+"reproduce_issue.py" = ["S106"]
+"test_*.py" = ["S106", "S101"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -1,6 +1,6 @@
-import langfuse
-from langfuse import Langfuse
 import inspect
+
+from langfuse import Langfuse
 
 client = Langfuse(
     public_key="pk-123", secret_key="sk-123", host="https://cloud.langfuse.com"

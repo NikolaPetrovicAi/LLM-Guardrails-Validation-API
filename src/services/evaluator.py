@@ -1,17 +1,16 @@
-import logging
 import asyncio
-from typing import List, Optional
+import logging
+
 from deepeval.metrics import (
     AnswerRelevancyMetric,
-    FaithfulnessMetric,
-    ToxicityMetric,
     BiasMetric,
+    FaithfulnessMetric,
     GEval,
+    ToxicityMetric,
 )
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 from langfuse import Langfuse
 
-from src.core.config import settings
 from src.services.guardrails import PIIMaskingService
 
 logger = logging.getLogger(__name__)
@@ -94,7 +93,7 @@ class DeepEvalService:
         trace_id: str,
         input_text: str,
         actual_output: str,
-        retrieval_context: Optional[List[str]] = None,
+        retrieval_context: list[str] | None = None,
     ) -> None:
         """
         Runs DeepEval metrics and logs them to Langfuse.

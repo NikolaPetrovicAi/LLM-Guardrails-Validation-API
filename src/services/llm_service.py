@@ -253,7 +253,7 @@ class ViralContentService:
                     # Optional: Automated Evaluation for SHADOW
                     if (
                         self.eval_service
-                        and random.random() < settings.EVAL_SAMPLE_RATE
+                        and random.random() < settings.EVAL_SAMPLE_RATE  # noqa: S311
                     ):
                         logger.info(
                             f"🧪 Triggering DeepEval for SHADOW "
@@ -285,7 +285,7 @@ class ViralContentService:
             # Step 6: Automated Evaluation for PROD
             if (
                 self.eval_service
-                and random.random() < settings.EVAL_SAMPLE_RATE
+                and random.random() < settings.EVAL_SAMPLE_RATE  # noqa: S311
             ):
                 asyncio.create_task(
                     self.eval_service.evaluate_and_log(

@@ -93,7 +93,9 @@ def calculate_diversity():
             "za veću kreativnost."
         )
     else:
-        recommendation = "Odličan diverzitet! Model generiše veoma različite skripte."
+        recommendation = (
+            "Odličan diverzitet! Model generiše veoma različite skripte."
+        )
 
     # Markdown Report Generation
     report_content = f"""# 🎨 Creative Diversity Report

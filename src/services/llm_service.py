@@ -251,16 +251,26 @@ class ViralContentService:
                     )
 
                     # Optional: Automated Evaluation for SHADOW
-                    if self.eval_service and random.random() < settings.EVAL_SAMPLE_RATE:
-                        logger.info(f"🧪 Triggering DeepEval for SHADOW (Trace: {shadow_trace_id})")
+                    if (
+                        self.eval_service
+                        and random.random() < settings.EVAL_SAMPLE_RATE
+                    ):
+                        logger.info(
+                            f"🧪 Triggering DeepEval for SHADOW "
+                            f"(Trace: {shadow_trace_id})"
+                        )
                         await self.eval_service.evaluate_and_log(
                             trace_id=shadow_trace_id,
-                            input_text=f"Topic: {request.topic}, Audience: {request.target_audience}",
+                            input_text=(
+                                f"Topic: {request.topic}, "
+                                f"Audience: {request.target_audience}"
+                            ),
                             actual_output=shadow_response.to_eval_text(),
                         )
                 except Exception as shadow_err:
                     logger.error(
-                        f"❌ Shadow Deployment background task failed: {str(shadow_err)}",
+                        f"❌ Shadow Deployment background task failed: "
+                        f"{str(shadow_err)}",
                         exc_info=True
                     )
 
@@ -273,11 +283,17 @@ class ViralContentService:
             )
 
             # Step 6: Automated Evaluation for PROD
-            if self.eval_service and random.random() < settings.EVAL_SAMPLE_RATE:
+            if (
+                self.eval_service
+                and random.random() < settings.EVAL_SAMPLE_RATE
+            ):
                 asyncio.create_task(
                     self.eval_service.evaluate_and_log(
                         trace_id=request_id,
-                        input_text=f"Topic: {request.topic}, Audience: {request.target_audience}",
+                        input_text=(
+                            f"Topic: {request.topic}, "
+                            f"Audience: {request.target_audience}"
+                        ),
                         actual_output=response.to_eval_text(),
                     )
                 )

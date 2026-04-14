@@ -56,7 +56,11 @@ class DeepEvalService:
         # Custom S.C.R.I.P.T. Metric using G-Eval
         self.script_metric = GEval(
             name="Viral S.C.R.I.P.T. Compliance",
-            criteria="Determine if the script follows the S.C.R.I.P.T. method (Segment, Context, Retention, Intent, Persona, Temporal). It must have zero generic starts, clear audio-visual synergy, and a strong hook.",
+            criteria=(
+                "Determine if the script follows the S.C.R.I.P.T. method (Segment, "
+                "Context, Retention, Intent, Persona, Temporal). It must have zero "
+                "generic starts, clear audio-visual synergy, and a strong hook."
+            ),
             evaluation_params=[
                 LLMTestCaseParams.INPUT,
                 LLMTestCaseParams.ACTUAL_OUTPUT,
@@ -126,20 +130,37 @@ class DeepEvalService:
                             comment=reason
                         )
                     else:
-                        logger.warning(f"⚠️ DeepEval metric {name} produced None score for trace {trace_id}")
+                        logger.warning(
+                            f"⚠️ DeepEval metric {name} produced None score "
+                            f"for trace {trace_id}"
+                        )
                     return score
                 except Exception as e:
-                    logger.error(f"❌ Failed to run or log DeepEval metric {name}: {str(e)}")
+                    logger.error(
+                        f"❌ Failed to run or log DeepEval metric {name}: {str(e)}"
+                    )
                     return None
 
             # Run metrics in parallel where possible (or just sequentially in thread)
             # Since DeepEval metrics are synchronous in this config, we use to_thread
-            await asyncio.to_thread(run_and_log, self.relevancy_metric, "relevancy")
-            await asyncio.to_thread(run_and_log, self.faithfulness_metric, "faithfulness")
-            await asyncio.to_thread(run_and_log, self.toxicity_metric, "toxic")
-            await asyncio.to_thread(run_and_log, self.bias_metric, "bias")
-            await asyncio.to_thread(run_and_log, self.script_metric, "script_compliance")
-            await asyncio.to_thread(run_and_log, self.hook_strength_metric, "hook_strength")
+            await asyncio.to_thread(
+                run_and_log, self.relevancy_metric, "relevancy"
+            )
+            await asyncio.to_thread(
+                run_and_log, self.faithfulness_metric, "faithfulness"
+            )
+            await asyncio.to_thread(
+                run_and_log, self.toxicity_metric, "toxic"
+            )
+            await asyncio.to_thread(
+                run_and_log, self.bias_metric, "bias"
+            )
+            await asyncio.to_thread(
+                run_and_log, self.script_metric, "script_compliance"
+            )
+            await asyncio.to_thread(
+                run_and_log, self.hook_strength_metric, "hook_strength"
+            )
 
             self.langfuse.flush()
             logger.info(f"✅ DeepEval metrics logged for trace {trace_id}")

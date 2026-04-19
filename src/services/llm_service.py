@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import hashlib
 import logging
 import random
@@ -94,44 +95,13 @@ class ViralContentService:
         # Step 1: PII Masking (only mask user input)
         masked_text = self.pii_service.mask_text(user_prompt)
 
-        # Step 4: LLM Generation
-        start_time = time.perf_counter()
-        response, usage = await self.provider.validate(
-            masked_text,
-            system_prompt=system_prompt,
-            model=prompt_def.config.model_name,
-            temperature=prompt_def.config.temperature,
-            max_tokens=prompt_def.config.max_tokens,
-        )
-        latency_ms = (time.perf_counter() - start_time) * 1000
+        # Step 4: LLM Generation & Tracking
+        type_label = "SHADOW" if is_shadow else "PROD"
+        response = None
 
-        # Inject Trace ID into the response object
-        response.trace_id = request_id
-
-        # Step 5: Cost & Quality Tracking
-        usage_data = self.usage_tracker.extract_usage_and_log(
-            usage=usage,
-            model=getattr(self.provider, "model", "unknown"),
-            request_id=request_id,
-            latency_ms=round(latency_ms, 2),
-            self_score=response.audit.hook_strength,
-            input_text=masked_text,
-            output_text=response.model_dump_json(),
-            prompt_id=prompt_def.id,
-            prompt_version=prompt_def.version,
-        )
-
-        # Basic Langfuse Logging (v4 SDK Migration)
         if self.langfuse:
             try:
-                type_label = "SHADOW" if is_shadow else "PROD"
-                print(
-                    f"📡 Sending {type_label} data to Langfuse "
-                    f"(Trace ID: {request_id})..."
-                )
-
-                # In v4, we use start_as_current_observation (Context Manager)
-                # Tags and other trace-level properties go into trace_context
+                # 1. Start Langfuse observation BEFORE generation
                 with self.langfuse.start_as_current_observation(
                     name="viral_script_generation",
                     as_type="generation",
@@ -144,23 +114,54 @@ class ViralContentService:
                         ],
                     },
                     input=request.model_dump(),
-                    output=response.model_dump(),
                     model=prompt_def.config.model_name,
                     version=prompt_def.version,
                     metadata={
                         "topic": request.topic,
                         "prompt_id": prompt_def.id,
-                        "latency_ms": latency_ms,
                         "is_shadow": is_shadow,
                         "request_id": request_id,
                         "platform": request.platform,
                     },
-                    usage_details={
-                        "input": usage_data.get("prompt_tokens", 0),
-                        "output": usage_data.get("completion_tokens", 0),
-                        "total": usage_data.get("total_tokens", 0),
-                    },
                 ) as gen:
+                    # 2. LLM CALL IS NOW INSIDE THE BLOCK
+                    start_time = time.perf_counter()
+                    response, usage = await self.provider.validate(
+                        masked_text,
+                        system_prompt=system_prompt,
+                        model=prompt_def.config.model_name,
+                        temperature=prompt_def.config.temperature,
+                        max_tokens=prompt_def.config.max_tokens,
+                    )
+                    latency_ms = (time.perf_counter() - start_time) * 1000
+
+                    # Inject Trace ID into the response object
+                    response.trace_id = request_id
+
+                    # 3. Local logging (must be inside so latency_ms is correct)
+                    usage_data = self.usage_tracker.extract_usage_and_log(
+                        usage=usage,
+                        model=getattr(self.provider, "model", "unknown"),
+                        request_id=request_id,
+                        latency_ms=round(latency_ms, 2),
+                        self_score=response.audit.hook_strength,
+                        input_text=masked_text,
+                        output_text=response.model_dump_json(),
+                        prompt_id=prompt_def.id,
+                        prompt_version=prompt_def.version,
+                    )
+
+                    # 4. Update Langfuse with results
+                    gen.update(
+                        output=response.model_dump(),
+                        metadata={"latency_ms": latency_ms},
+                        usage_details={
+                            "input": usage_data.get("prompt_tokens", 0),
+                            "output": usage_data.get("completion_tokens", 0),
+                            "total": usage_data.get("total_tokens", 0),
+                        },
+                    )
+
                     # Add scores to the trace
                     gen.score_trace(
                         name="hook_strength",
@@ -172,18 +173,66 @@ class ViralContentService:
                         value=response.audit.retention_score,
                         comment=f"Platform: {request.platform}",
                     )
-                    
+
                     # Mandatory in Langfuse v4 for correct metadata export
                     gen.end()
 
-                # Force flush (optional but recommended for short-lived processes)
+                # Force flush
                 self.langfuse.flush()
-                print(f"✅ {type_label} data FLUSHED to Langfuse.")
             except Exception as lf_err:
-                logger.error(
-                    f"❌ Langfuse logging failed: {str(lf_err)}", exc_info=True
-                )
-                print(f"❌ Langfuse error: {str(lf_err)}")
+                logger.error(f"⚠️ Langfuse error (Request {request_id}): {lf_err}")
+                # Fallback if Langfuse failed before or during LLM generation
+                if response is None:
+                    start_time = time.perf_counter()
+                    response, usage = await self.provider.validate(
+                        masked_text,
+                        system_prompt=system_prompt,
+                        model=prompt_def.config.model_name,
+                        temperature=prompt_def.config.temperature,
+                        max_tokens=prompt_def.config.max_tokens,
+                    )
+                    latency_ms = (time.perf_counter() - start_time) * 1000
+
+                    # Inject Trace ID into the response object
+                    response.trace_id = request_id
+
+                    self.usage_tracker.extract_usage_and_log(
+                        usage=usage,
+                        model=getattr(self.provider, "model", "unknown"),
+                        request_id=request_id,
+                        latency_ms=round(latency_ms, 2),
+                        self_score=response.audit.hook_strength,
+                        input_text=masked_text,
+                        output_text=response.model_dump_json(),
+                        prompt_id=prompt_def.id,
+                        prompt_version=prompt_def.version,
+                    )
+        else:
+            # Fallback logic without Langfuse
+            start_time = time.perf_counter()
+            response, usage = await self.provider.validate(
+                masked_text,
+                system_prompt=system_prompt,
+                model=prompt_def.config.model_name,
+                temperature=prompt_def.config.temperature,
+                max_tokens=prompt_def.config.max_tokens,
+            )
+            latency_ms = (time.perf_counter() - start_time) * 1000
+
+            # Inject Trace ID into the response object
+            response.trace_id = request_id
+
+            self.usage_tracker.extract_usage_and_log(
+                usage=usage,
+                model=getattr(self.provider, "model", "unknown"),
+                request_id=request_id,
+                latency_ms=round(latency_ms, 2),
+                self_score=response.audit.hook_strength,
+                input_text=masked_text,
+                output_text=response.model_dump_json(),
+                prompt_id=prompt_def.id,
+                prompt_version=prompt_def.version,
+            )
 
         return response
 
@@ -274,7 +323,9 @@ class ViralContentService:
                         exc_info=True
                     )
 
-            asyncio.create_task(run_shadow_with_delay())
+            # Izolacija konteksta kako Shadow ne bi nasledio PROD trace
+            ctx = contextvars.copy_context()
+            asyncio.create_task(ctx.run(run_shadow_with_delay))
 
         # Step 5: Main LLM Generation
         try:

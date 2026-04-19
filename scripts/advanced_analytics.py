@@ -230,6 +230,12 @@ def run_analytics(num_examples: int = 5, use_random: bool = False, version: str 
         # Glossary / Formulas
         summary_lines.append("[bold dim]Glossary & Formulas:[/bold dim]")
         summary_lines.append(
+            "[dim]• Self-Audit: Model's internal Hook Strength score[/dim]"
+        )
+        summary_lines.append(
+            "[dim]• Judge: GPT-4o's objective Hook Strength score[/dim]"
+        )
+        summary_lines.append(
             "[dim]• MCE: Mean Calibration Error (Avg |Self - Judge|)[/dim]"
         )
         summary_lines.append(

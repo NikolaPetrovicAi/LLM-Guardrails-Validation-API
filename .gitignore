@@ -79,8 +79,7 @@ target/
 .ipynb_checkpoints
 
 # IPython
-profile_default/
-ipython_config.py
+profile_default/ipython_config.py
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the Python version is usually managed by the user.
@@ -124,9 +123,6 @@ venv.bak/
 
 # Spyder project settings
 .spyderproject
-.spyproject
-
-# Rope project settings
 .ropeproject
 
 # mkdocs documentation
@@ -155,22 +151,26 @@ cython_debug/
 # uv
 .uv/
 uv.lock
-# Zadržavamo uv.lock jer je preporučeno za aplikacije (portfolio), 
-# ali ga neki ignorišu. Za sada ga ostavljam jer je dobar za reprodukciju.
 
-# Local test cache
-.test_cache/
+# Project specific caches and temp files
+.ruff_cache/
+.deepeval/
+.cache/
 .cache_semantic/
 .cache_semantic_v2/
 tmp_test_semantic_cache/
 tmp_test_semantic_tiered/
 
-# Debug and Demo files
-debug_settings*.py
-demo_cache.py
+# Dummy/Test Caches
 demo_cache_db/
-demo_logs.txt
 dummy_cache/
 dummy_cache_apo/
+dummy_cache_deepeval/
+dummy_cache_failsafe/
 dummy_cache_lifecycle/
+
+# Debug and miscellaneous
+debug_settings*.py
+demo_cache.py
+demo_logs.txt
 test_langfuse_v4_api.py

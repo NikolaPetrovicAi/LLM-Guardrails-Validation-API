@@ -1,82 +1,113 @@
-# 🚀 Aivy Workspace: High-Fidelity AI Document Engine
+# 🚀 Viral Content Engine: Technical Deep Dive
 
-**Aivy Workspace** is a specialized document orchestration system designed to eliminate the non-deterministic nature of LLM-generated content. Unlike traditional AI writing tools that rely on fragile free-form text parsing, Aivy implements a schema-driven workflow that enforces structural integrity through a dedicated Intermediate Representation (IR).
-
-By leveraging OpenAI Structured Outputs and a custom index-sensitive mapping engine, the system transforms abstract AI intents into precise Google Docs API `batchUpdate` sequences. This ensures 100% layout parity and allows for complex document structures to be rendered deterministically within the Google Workspace ecosystem.
-
+This document provides a comprehensive overview of the engineering architecture, Prompt Ops strategies, and evaluation frameworks powering the **Viral Content Engine**. Designed for engineers, this deep dive focuses on the "how" and "why" of our AI infrastructure, emphasizing scalability, observability, and performance optimization.
 
 ---
 
-## 🌟 Key Features
+## 1. System Architecture & Orchestration
 
-*   **Asynchronous Planner–Writer Pipeline** The system decouples document architecture from content synthesis. The Planner (`aiPlanner.js`) performs context-aware block selection (Business vs. Non-Business logic), organizing "Small" and "Large" logical templates into a paginated blueprint. The Writer (`aiWriter.js`) then populates these templates, adhering to strict heuristic constraints (e.g., maximum item limits per list) to ensure visual consistency and professional document density.
+The system is built on a modular **FastAPI** backend, utilizing a strict **Dependency Injection (DI)** pattern to ensure high testability and separation of concerns.
 
-*   **Deterministic Generation via OpenAI Structured Outputs:** Aivy leverages OpenAI Structured Outputs with strict JSON schemas (strict: true) to ensure the LLM output is 100% compliant with the application's internal data model. This approach eliminates the need for heuristic-based parsing and allows for the direct transformation of JSON data into hierarchical Google Docs elements, guaranteeing valid document structures for every generation.
+### High-Level Data Flow
+1. **API Layer**: Validates incoming Pydantic schemas and injects dependencies.
+2. **Orchestration (`ViralContentService`)**: Coordinates the lifecycle of a request: PII masking -> Semantic Cache lookup -> Prompt Rendering -> LLM Execution -> Telemetry.
+3. **Provider Abstraction**: A strategy pattern for LLM backends (OpenAI, Anthropic), wrapped with the `instructor` library for guaranteed **Structured Outputs**.
 
-*   **Context-Aware Editing with State-Isolated Streaming:** The in-editor AI assistant (aiEditor.js) performs range-restricted modifications by analyzing the full document context for style and tone consistency, while strictly limiting edits to the user-selected text. To maintain a responsive 60FPS experience, the system uses a state isolation strategy: streaming updates are injected directly into the ProseMirror state, bypassing React's reconciliation cycle during active generation. Global state synchronization is deferred until the stream is complete, preventing UI lag.
+```ascii
+[Client] -> [FastAPI Endpoints] -> [deps.py (DI)]
+                                        |
+               [ViralContentService (Orchestrator)]
+                /          |           |          \
+      [PIIMasking]  [PromptManager] [SemanticCache] [LLM Provider]
+            |              |           |               |
+      (Regex/NLP)    (YAML/Jinja2)  (L1/L2 Tiered)  (Instructor/Pydantic)
+```
 
-
----
-
-## 🛠 Engineering Challenges & Solutions
-
-### 1. Structured AI-to-Document Mapping via JSON Schemas
-**Problem:** Mapping non-deterministic LLM outputs to the strictly indexed Google Docs API often results in structural failures or malformed documents due to unpredictable AI-generated syntax.
-
-**Solution:** Implemented a dedicated Intermediate Representation (IR) layer leveraging OpenAI Structured Outputs with strict: true. This architecture forces the LLM to generate a sequence of typed block-primitives (e.g., STATS_ROW_BLOCK, SWOT_LIST_BLOCK) that map directly to pre-defined batchUpdate request sequences. By validating AI outputs against a strict JSON schema, the system ensures that all generated content is structurally compliant with the Google Docs API requirements before any document modification begins.
-
-### 2. High-Fidelity Rendering & Style Inheritance Control
-**Problem:** Achieving visual parity between a browser-based DOM and the linear, index-sensitive Google Docs API is difficult due to the API's implicit style inheritance model, where new paragraphs automatically carry over formatting from preceding blocks.
-
-**Solution:** Developed an Explicit Style Translation layer utilizing a two-phase rendering algorithm. The first phase performs a recursive DOM traversal to map HTML nodes into a linear, index-aware array. The second phase executes a Priority-Based Operation Sequence: it performs an Atomic Style Cleanup of inherited properties (using targeted delete requests) before applying new formatting. This ensures precise control over indentation, alignment, and spacing, guaranteeing that the final document matches the editor's layout deterministically.
-
-### 3. State-Isolated Streaming & Performance Optimization
-**Problem:** Streaming AI-generated text directly into a React-based rich-text editor at high frequencies triggers massive reconciliation cycles, leading to UI "choking," input lag, and a degraded 60FPS user experience.
-
-**Solution:** Implemented a State Isolation strategy within the Tiptap/ProseMirror environment. During active AI generation, the system bypasses the global React state update cycle (onPageUpdate). Instead, incoming text chunks are injected directly into the editor’s internal ProseMirror state. Global state synchronization and "de-buffering" (flush) only occur once the stream is closed. This architecture drastically reduces the number of re-renders, maintaining a highly responsive UI even during long-form content generation.
+### Dependency Injection (`src/api/deps.py`)
+We leverage `functools.lru_cache` for singleton service instantiation. This allows for seamless provider swapping (e.g., switching from GPT-4o to Claude 3.5 Sonnet) and simplifies unit testing by allowing easy dependency overrides.
 
 ---
 
-## 🧠 AI Logic & Prompt Engineering
-Aivy Workspace utilizes modularized AI engines for different document lifecycle stages. You can review the prompt engineering and JSON schemas in the following backend files:
+## 2. Prompt Ops: Prompts as Code
 
-- **Document Planner (backend/ai/aiPlanner.js):** Orchestrates initial blueprinting and block selection based on domain context.
-- **Structured Writer (backend/ai/aiWriter.js):** Uses OpenAI Structured Outputs to populate templates while enforcing strict visual density constraints.
-- **Contextual Editor (backend/ai/aiEditor.js):** Performs range-restricted transformations, analyzing full document context to maintain style consistency.
+Prompt engineering is treated with the same rigor as production code. Prompts are externalized into YAML files within `src/prompts/`, enabling **Version Pinning** and **Shadow Deployments**.
 
----
+### Versioning & Shadow Deployment
+Our `PromptManager` supports loading specific versions and "shadow" versions for A/B testing:
+```yaml
+id: tiktok_script_v1
+version: 1.0.2
+shadow_version: 1.1.0-candidate  # Runs in parallel for evaluation
+config:
+  model_name: "gpt-4o"
+  temperature: 0.7
+system_prompt: "You are a viral strategist for {{ platform }}..."
+```
 
-## 🏗 Architecture & Tech Stack
-
-### Frontend
-- **Framework:** Next.js (App Router) with React.
-- **Editor:** Tiptap (ProseMirror) with custom extensions for structured content, alignment, and AI-assisted editing.
-- **Styling:** Tailwind CSS for consistent, utility-driven UI composition.
-
-### Backend
-- **Runtime:** Node.js with Express.
-- **AI Orchestration:** OpenAI API with streaming support and schema-constrained generation.
-- **Integrations:** Google Workspace APIs (Docs, Drive, OAuth 2.0).
-- **Session Management:** Secure multi-user session handling for OAuth tokens and editor state.
+### Key Components:
+- **Jinja2 Rendering**: Allows for complex logic within templates (e.g., platform-specific instructions or dynamic few-shot examples).
+- **Structured Outputs**: By using `instructor`, we eliminate parsing errors. The LLM's output is directly validated against Pydantic models (e.g., `ViralScriptResponse`), ensuring downstream reliability.
 
 ---
 
-## 🚀 Installation & Setup
+## 3. Tiered Semantic Caching & Latency Optimization
 
-### Prerequisites
-- Node.js 20+
-- Google Cloud Project with Docs/Drive APIs enabled.
-- OpenAI API Key.
+To achieve sub-millisecond lookups for common intents and significant cost savings, we implemented a **Tiered Semantic Cache** (`src/services/semantic_cache.py`).
 
-### Quick Start
-1. **Clone & Install:**
-   ```bash
-   git clone https://github.com/your-username/aivy-workspace
-   cd aivy-workspace
-   npm install && cd frontend && npm install && cd ../backend && npm install
-   ```
-2. **Environment Setup:** Create a `.env` in the `backend/` folder (see `.env.example`).
-3. **Run Locally:**
-   - **Backend:** `cd backend && node index.js`
-   - **Frontend:** `cd frontend && npm run dev`
-4. **Authenticate:** Visit `http://localhost:3000`. The application will automatically redirect you to the Google login page to link your account.
+### Cache Layers:
+1. **L1 (In-Memory LRU)**: An `OrderedDict`-based cache for exact or near-exact matches, serving responses in **<1ms**.
+2. **L2 (Persistent Vector Store)**: Uses `SentenceTransformers` (`all-MiniLM-L6-v2`) and `diskcache`. This layer performs semantic similarity searches.
+
+### Dynamic Thresholding (Intent-Based)
+The system dynamically adjusts the similarity threshold based on the query complexity to prevent "hallucinated" cache hits:
+- **Short Informational (<10 words)**: High threshold (**0.95**) for maximum precision.
+- **Creative/Long-Form (>50 words)**: Lower threshold (**0.88**) to allow for semantic flexibility in complex scenarios.
+
+---
+
+## 4. Evaluation Framework: The "Math" of Quality
+
+We move beyond "vibe checks" by implementing a quantitative evaluation framework using **LLM-as-a-Judge** (via `DeepEval`).
+
+### Core Metrics:
+- **Mean Calibration Error (MCE)**: Measures the "Calibration Gap" between the model's self-audit (how good it *thinks* it is) and an external GPT-4o judge.
+- **ROI (Efficiency Ratio)**: Calculated as `(Judge_Score / USD_Cost)`. This helps us identify the Pareto frontier between model performance and price.
+- **Semantic Diversity**: Uses `Cosine Similarity` across the generated dataset to ensure the system isn't producing repetitive outputs, which is critical for creative "viral" content.
+
+### Calibration Audit Example
+| Trace ID | Version | Model | Self-Audit | Judge Score | MCE (Gap) | ROI |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: |
+| `8f2a1c...` | 1.0.2 | gpt-4o | 0.90 | 0.85 | 0.05 | 120x |
+
+---
+
+## 5. Observability & Telemetry
+
+Full-stack tracing and telemetry are mandatory for production stability.
+
+- **W3C Tracing**: Integrated with **Langfuse** using 32-character hex `trace_id`s. Every LLM call, cache hit, and evaluation is linked.
+- **Telemetry (`logs/metrics_data.jsonl`)**: We log every request with metadata: `prompt_id`, `version`, `latency_ms`, `cost_usd`, and `tokens_used`. This enables offline ROI analysis and model performance auditing.
+- **PII Masking**: Integrated into the pipeline to ensure sensitive user data is never sent to the LLM providers or stored in logs.
+
+---
+
+## 6. Local Development & Benchmarking
+
+### Setup
+```bash
+# Install dependencies using 'uv'
+uv sync
+
+# Run the production API
+uv run python -m src.main
+```
+
+### Benchmarking & Analytics
+The project includes specialized scripts for deep-dive analysis:
+- **Advanced Analytics**: `uv run python scripts/advanced_analytics.py` (Calculates MCE and ROI).
+- **Diversity Audit**: `uv run python scripts/semantic_diversity.py` (Measures output creativity).
+- **Lifecycle Verification**: `uv run python scripts/verify_lifecycle.py` (E2E smoke tests).
+
+---
+
+**Engineering Philosophy**: This engine is designed to be model-agnostic and metric-driven. By treating prompts as versioned assets and evaluation as a continuous integration step, we ensure that improvements in the "viral" quality are measurable, reproducible, and cost-effective at scale.

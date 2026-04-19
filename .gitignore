@@ -170,6 +170,7 @@ dummy_cache_failsafe/
 dummy_cache_lifecycle/
 
 # Debug and miscellaneous
+GEMINI.md
 debug_settings*.py
 demo_cache.py
 demo_logs.txt
